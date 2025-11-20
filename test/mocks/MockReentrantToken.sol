@@ -2,31 +2,7 @@
 pragma solidity 0.8.28;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-interface IPermissionManager {
-    struct Permission {
-        address account;
-        address spender;
-        uint48 start;
-        uint48 end;
-        uint256 salt;
-        CallPermission[] calls;
-        SpendLimit[] spends;
-    }
-
-    struct CallPermission {
-        address target;
-        bytes4 selector;
-    }
-
-    struct SpendLimit {
-        address token;
-        uint256 limit;
-        uint48 period;
-    }
-
-    function spend(Permission memory permission, uint256 spendIndex, uint256 value) external;
-}
+import {JustaPermissionManager} from "../../src/JustaPermissionManager.sol";
 
 /**
  * @dev Malicious ERC20 token that attempts reentrancy during transferFrom
@@ -34,9 +10,9 @@ interface IPermissionManager {
 contract MockReentrantToken is ERC20 {
     address public attackTarget;
     bool public shouldAttack;
-    IPermissionManager.Permission public attackPermission;
-    uint256 public attackSpendIndex;
-    uint256 public attackValue;
+    JustaPermissionManager.Permission public attackPermission;
+    JustaPermissionManager.SpendLimit public attackSpendLimit;
+    uint160 public attackValue;
 
     constructor() ERC20("Reentrant", "REENT") {}
 
@@ -46,13 +22,13 @@ contract MockReentrantToken is ERC20 {
 
     function setupAttack(
         address _target,
-        IPermissionManager.Permission memory _permission,
-        uint256 _spendIndex,
-        uint256 _value
+        JustaPermissionManager.Permission calldata _permission,
+        JustaPermissionManager.SpendLimit calldata _spendLimit,
+        uint160 _value
     ) external {
         attackTarget = _target;
         attackPermission = _permission;
-        attackSpendIndex = _spendIndex;
+        attackSpendLimit = _spendLimit;
         attackValue = _value;
         shouldAttack = true;
     }
@@ -61,7 +37,7 @@ contract MockReentrantToken is ERC20 {
         if (shouldAttack && attackTarget != address(0)) {
             shouldAttack = false; // Prevent infinite recursion
             // Attempt reentrancy
-            IPermissionManager(attackTarget).spend(attackPermission, attackSpendIndex, attackValue);
+            JustaPermissionManager(attackTarget).spend(attackPermission, attackSpendLimit, attackValue);
         }
         return super.transferFrom(from, to, amount);
     }

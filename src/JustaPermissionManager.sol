@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity 0.8.28;
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -10,6 +10,7 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 
 import { EIP712 } from "solady/utils/EIP712.sol";
+import { ReentrancyGuard } from "solady/utils/ReentrancyGuard.sol";
 
 /**
  * @title JustaPermissionManager
@@ -18,7 +19,7 @@ import { EIP712 } from "solady/utils/EIP712.sol";
  *
  * @author JustaLab
  */
-contract JustaPermissionManager is EIP712 {
+contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
 
@@ -295,7 +296,7 @@ contract JustaPermissionManager is EIP712 {
                 revert JustaPermissionManager_ZeroAllowance();
             }
 
-            // Check perios is non-zero
+            // Check period is non-zero
             if (permission.spends[i].period == 0) {
                 revert JustaPermissionManager_ZeroPeriod();
             }
@@ -359,6 +360,7 @@ contract JustaPermissionManager is EIP712 {
         bytes calldata data
     )
         external
+        nonReentrant
         requireSender(permission.spender)
     {
         // Validate calldata has at least a selector
@@ -403,6 +405,7 @@ contract JustaPermissionManager is EIP712 {
         uint160 value
     )
         external
+        nonReentrant
         requireSender(permission.spender)
     {
         bytes32 hash = getHash(permission);
