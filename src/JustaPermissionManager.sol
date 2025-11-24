@@ -35,28 +35,133 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     // ERRORS
     ////////////////////////////////////////////////////////////////////////
 
-    error InvalidSender(address sender, address expected);
-    error UnauthorizedPermission();
-    error ZeroSpender();
-    error InvalidStartEnd(uint48 start, uint48 end);
-    error BeforePermissionStart(uint48 currentTimestamp, uint48 start);
-    error AfterPermissionEnd(uint48 currentTimestamp, uint48 end);
-    error SpendValueOverflow(uint256 value);
-    error ExceededSpendLimit(uint256 value, uint256 allowance);
-    error UnauthorizedCall(address target, bytes4 selector);
-    error ZeroToken();
-    error ZeroAllowance();
-    error ERC721TokenNotSupported(address token);
-    error ERC1155TokenNotSupported(address token);
-    error EmptyPermission();
-    error ZeroTarget();
-    error ZeroSelector();
-    error DuplicateSpendLimit(address token);
-    error NoSpendPermissions();
-    error CannotTargetSelf();
-    error CannotTargetAccount();
-    error PeriodOverflow();
-    error ApprovalRevocationFailed(address token, address spender);
+    /**
+     * @notice Thrown when the caller is not the expected sender.
+     * @param sender The actual caller address.
+     * @param expected The expected caller address.
+     */
+    error JustaPermissionManager_InvalidSender(address sender, address expected);
+
+    /**
+     * @notice Thrown when attempting to use a permission that is not approved or has been revoked.
+     */
+    error JustaPermissionManager_UnauthorizedPermission();
+
+    /**
+     * @notice Thrown when the spender address is zero during permission approval.
+     */
+    error JustaPermissionManager_ZeroSpender();
+
+    /**
+     * @notice Thrown when the permission start time is not strictly before the end time.
+     * @param start The permission start timestamp.
+     * @param end The permission end timestamp.
+     */
+    error JustaPermissionManager_InvalidStartEnd(uint48 start, uint48 end);
+
+    /**
+     * @notice Thrown when attempting to execute before the permission's valid start time.
+     * @param currentTimestamp The current block timestamp.
+     * @param start The permission start timestamp.
+     */
+    error JustaPermissionManager_BeforePermissionStart(uint48 currentTimestamp, uint48 start);
+
+    /**
+     * @notice Thrown when attempting to execute after the permission's valid end time.
+     * @param currentTimestamp The current block timestamp.
+     * @param end The permission end timestamp.
+     */
+    error JustaPermissionManager_AfterPermissionEnd(uint48 currentTimestamp, uint48 end);
+
+    /**
+     * @notice Thrown when the total spend value exceeds uint160 max.
+     * @param value The spend value that caused the overflow.
+     */
+    error JustaPermissionManager_SpendValueOverflow(uint256 value);
+
+    /**
+     * @notice Thrown when the total spend exceeds the configured allowance for a token.
+     * @param value The total spend amount.
+     * @param allowance The maximum allowed spend for the period.
+     */
+    error JustaPermissionManager_ExceededSpendLimit(uint256 value, uint256 allowance);
+
+    /**
+     * @notice Thrown when attempting to execute a call that is not authorized by the permission.
+     * @param target The target contract address.
+     * @param selector The function selector being called.
+     */
+    error JustaPermissionManager_UnauthorizedCall(address target, bytes4 selector);
+
+    /**
+     * @notice Thrown when the token address in a spend limit is zero.
+     */
+    error JustaPermissionManager_ZeroToken();
+
+    /**
+     * @notice Thrown when the allowance in a spend limit is zero.
+     */
+    error JustaPermissionManager_ZeroAllowance();
+
+    /**
+     * @notice Thrown when attempting to set a spend limit for an ERC-721 token (not supported).
+     * @param token The ERC-721 token address.
+     */
+    error JustaPermissionManager_ERC721TokenNotSupported(address token);
+
+    /**
+     * @notice Thrown when attempting to set a spend limit for an ERC-1155 token (not supported).
+     * @param token The ERC-1155 token address.
+     */
+    error JustaPermissionManager_ERC1155TokenNotSupported(address token);
+
+    /**
+     * @notice Thrown when the permission has no call permissions configured.
+     */
+    error JustaPermissionManager_EmptyPermission();
+
+    /**
+     * @notice Thrown when a call permission has a zero target address that is not a wildcard.
+     */
+    error JustaPermissionManager_ZeroTarget();
+
+    /**
+     * @notice Thrown when a call permission has a zero selector that is not a wildcard.
+     */
+    error JustaPermissionManager_ZeroSelector();
+
+    /**
+     * @notice Thrown when duplicate spend limits are configured for the same token with identical parameters.
+     * @param token The token address with duplicate spend limit configuration.
+     */
+    error JustaPermissionManager_DuplicateSpendLimit(address token);
+
+    /**
+     * @notice Thrown when attempting to spend a token that has no configured spend permissions.
+     */
+    error JustaPermissionManager_NoSpendPermissions();
+
+    /**
+     * @notice Thrown when attempting to target the permission manager itself (privilege escalation prevention).
+     */
+    error JustaPermissionManager_CannotTargetSelf();
+
+    /**
+     * @notice Thrown when attempting to target the account directly (privilege escalation prevention).
+     */
+    error JustaPermissionManager_CannotTargetAccount();
+
+    /**
+     * @notice Thrown when the calculated period end overflows uint48.
+     */
+    error JustaPermissionManager_PeriodOverflow();
+
+    /**
+     * @notice Thrown when an ERC-20 approval revocation fails after execution.
+     * @param token The token address where revocation failed.
+     * @param spender The spender address whose approval could not be revoked.
+     */
+    error JustaPermissionManager_ApprovalRevocationFailed(address token, address spender);
 
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
@@ -207,7 +312,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     modifier requireSender(address sender) {
         if (msg.sender != sender) {
-            revert InvalidSender(msg.sender, sender);
+            revert JustaPermissionManager_InvalidSender(msg.sender, sender);
         }
         _;
     }
@@ -225,17 +330,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     function approve(Permission calldata permission) external requireSender(permission.account) returns (bool) {
         // Check spender is non-zero
         if (permission.spender == address(0)) {
-            revert ZeroSpender();
+            revert JustaPermissionManager_ZeroSpender();
         }
 
         // Check start is strictly before end
         if (permission.start >= permission.end) {
-            revert InvalidStartEnd(permission.start, permission.end);
+            revert JustaPermissionManager_InvalidStartEnd(permission.start, permission.end);
         }
 
-        // Check permission is not empty
-        if (permission.calls.length == 0 && permission.spends.length == 0) {
-            revert EmptyPermission();
+        // Check permission has at least one call permission
+        // Spend limits without call permissions are useless since you can't execute anything
+        if (permission.calls.length == 0) {
+            revert JustaPermissionManager_EmptyPermission();
         }
 
         // Validate call permissions
@@ -243,24 +349,24 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         for (uint256 i = 0; i < callsLength; i++) {
             // Prevent targeting self (privilege escalation)
             if (permission.calls[i].target == address(this)) {
-                revert CannotTargetSelf();
+                revert JustaPermissionManager_CannotTargetSelf();
             }
 
             // Prevent targeting the account (privilege escalation)
             if (permission.calls[i].target == permission.account) {
-                revert CannotTargetAccount();
+                revert JustaPermissionManager_CannotTargetAccount();
             }
 
             // Allow wildcards (ANY_TARGET, ANY_FN_SEL, EMPTY_CALLDATA_FN_SEL)
             // Reject zero values that are NOT wildcards
             if (permission.calls[i].target == address(0) && permission.calls[i].target != ANY_TARGET) {
-                revert ZeroTarget();
+                revert JustaPermissionManager_ZeroTarget();
             }
             if (
                 permission.calls[i].selector == bytes4(0)
                     && permission.calls[i].selector != EMPTY_CALLDATA_FN_SEL
             ) {
-                revert ZeroSelector();
+                revert JustaPermissionManager_ZeroSelector();
             }
         }
 
@@ -268,19 +374,19 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         uint256 spendsLength = permission.spends.length;
         for (uint256 i = 0; i < spendsLength; i++) {
             if (permission.spends[i].token == address(0)) {
-                revert ZeroToken();
+                revert JustaPermissionManager_ZeroToken();
             }
             if (permission.spends[i].allowance == 0) {
-                revert ZeroAllowance();
+                revert JustaPermissionManager_ZeroAllowance();
             }
 
             // Check token is not an ERC-721 or ERC-1155
             if (permission.spends[i].token != NATIVE_TOKEN) {
                 if (ERC165Checker.supportsInterface(permission.spends[i].token, type(IERC721).interfaceId)) {
-                    revert ERC721TokenNotSupported(permission.spends[i].token);
+                    revert JustaPermissionManager_ERC721TokenNotSupported(permission.spends[i].token);
                 }
                 if (ERC165Checker.supportsInterface(permission.spends[i].token, type(IERC1155).interfaceId)) {
-                    revert ERC1155TokenNotSupported(permission.spends[i].token);
+                    revert JustaPermissionManager_ERC1155TokenNotSupported(permission.spends[i].token);
                 }
             }
         }
@@ -296,7 +402,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             LibSort.sort(spendHashes);
             for (uint256 i = 1; i < spendsLength; i++) {
                 if (spendHashes[i] == spendHashes[i - 1]) {
-                    revert DuplicateSpendLimit(permission.spends[i].token);
+                    revert JustaPermissionManager_DuplicateSpendLimit(permission.spends[i].token);
                 }
             }
         }
@@ -305,7 +411,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // Check if already revoked - don't allow reusing revoked permission hashes
         if (_isRevoked[hash]) {
-            revert UnauthorizedPermission();
+            revert JustaPermissionManager_UnauthorizedPermission();
         }
 
         // Return true if already approved
@@ -375,12 +481,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         for (uint256 i = 0; i < callsLength; i++) {
             // Prevent targeting self (privilege escalation)
             if (calls[i].target == address(this)) {
-                revert CannotTargetSelf();
+                revert JustaPermissionManager_CannotTargetSelf();
             }
 
             // Prevent targeting the account (privilege escalation)
             if (calls[i].target == permission.account) {
-                revert CannotTargetAccount();
+                revert JustaPermissionManager_CannotTargetAccount();
             }
 
             // Extract function selector (use EMPTY_CALLDATA_FN_SEL for empty calldata)
@@ -390,7 +496,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
             // Check if this call is authorized
             if (!_isCallAuthorized(permission, calls[i].target, selector)) {
-                revert UnauthorizedCall(calls[i].target, selector);
+                revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
             }
         }
 
@@ -520,7 +626,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             SafeTransferLib.safeApprove(token, spender, 0);
             // Verify the approval was actually revoked
             if (IERC20(token).allowance(permission.account, spender) != 0) {
-                revert ApprovalRevocationFailed(token, spender);
+                revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
             }
         }
 
@@ -768,23 +874,23 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // If token has no spend limit configured, revert
         if (!found) {
-            revert NoSpendPermissions();
+            revert JustaPermissionManager_NoSpendPermissions();
         }
     }
 
     function _checkApprovedNotRevoked(bytes32 hash) internal view {
         if (!_isApproved[hash] || _isRevoked[hash]) {
-            revert UnauthorizedPermission();
+            revert JustaPermissionManager_UnauthorizedPermission();
         }
     }
 
     function _checkPermissionTimeBounds(uint48 start, uint48 end) internal view returns (uint48 currentTimestamp) {
         currentTimestamp = uint48(block.timestamp);
         if (currentTimestamp < start) {
-            revert BeforePermissionStart(currentTimestamp, start);
+            revert JustaPermissionManager_BeforePermissionStart(currentTimestamp, start);
         }
         if (currentTimestamp > end) {
-            revert AfterPermissionEnd(currentTimestamp, end);
+            revert JustaPermissionManager_AfterPermissionEnd(currentTimestamp, end);
         }
     }
 
@@ -804,11 +910,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         uint256 totalSpend = value + uint256(currentPeriod.spend);
 
         if (totalSpend > type(uint160).max) {
-            revert SpendValueOverflow(totalSpend);
+            revert JustaPermissionManager_SpendValueOverflow(totalSpend);
         }
 
         if (totalSpend > spendLimit.allowance) {
-            revert ExceededSpendLimit(totalSpend, spendLimit.allowance);
+            revert JustaPermissionManager_ExceededSpendLimit(totalSpend, spendLimit.allowance);
         }
 
         currentPeriod.spend = uint160(totalSpend);
@@ -858,7 +964,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // Check for overflow before casting
         if (calculatedEnd > type(uint48).max) {
-            revert PeriodOverflow();
+            revert JustaPermissionManager_PeriodOverflow();
         }
 
         // Cap at permission end
