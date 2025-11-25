@@ -295,11 +295,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     event PermissionApproved(bytes32 indexed permissionHash, Permission permission);
     event PermissionRevoked(bytes32 indexed permissionHash);
-    event CallExecuted(bytes32 indexed permissionHash, address indexed target, bytes4 indexed selector, uint256 value);
+    event CallsExecuted(bytes32 indexed permissionHash);
     event SpendLimitUsed(bytes32 indexed permissionHash, address indexed token, PeriodSpend periodSpend);
 
     ////////////////////////////////////////////////////////////////////////
-    // MODIFIERS
+    // MODIFIERSit 
     ////////////////////////////////////////////////////////////////////////
 
     modifier requireSender(address sender) {
@@ -338,7 +338,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // Validate call permissions
         uint256 callsLength = permission.calls.length;
-        for (uint256 i = 0; i < callsLength; i++) {
+        for (uint256 i = 0; i < callsLength;) {
             // Prevent targeting self (privilege escalation)
             if (permission.calls[i].target == address(this)) {
                 revert JustaPermissionManager_CannotTargetSelf();
@@ -349,22 +349,20 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 revert JustaPermissionManager_CannotTargetAccount();
             }
 
-            // Allow wildcards (ANY_TARGET, ANY_FN_SEL, EMPTY_CALLDATA_FN_SEL)
-            // Reject zero values that are NOT wildcards
-            if (permission.calls[i].target == address(0) && permission.calls[i].target != ANY_TARGET) {
+            // Reject zero target
+            if (permission.calls[i].target == address(0)) {
                 revert JustaPermissionManager_ZeroTarget();
             }
-            if (
-                permission.calls[i].selector == bytes4(0)
-                    && permission.calls[i].selector != EMPTY_CALLDATA_FN_SEL
-            ) {
+            // Reject zero selector
+            if (permission.calls[i].selector == bytes4(0)) {
                 revert JustaPermissionManager_ZeroSelector();
             }
+            unchecked { ++i; }
         }
 
         // Validate spend limits
         uint256 spendsLength = permission.spends.length;
-        for (uint256 i = 0; i < spendsLength; i++) {
+        for (uint256 i = 0; i < spendsLength;) {
             if (permission.spends[i].token == address(0)) {
                 revert JustaPermissionManager_ZeroToken();
             }
@@ -381,6 +379,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                     revert JustaPermissionManager_ERC1155TokenNotSupported(permission.spends[i].token);
                 }
             }
+            unchecked { ++i; }
         }
 
         // Check for duplicate spend limits (same token + allowance + period)
@@ -388,14 +387,16 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // but prevents exact duplicates which would double-count spending
         if (spendsLength > 1) {
             bytes32[] memory spendHashes = new bytes32[](spendsLength);
-            for (uint256 i = 0; i < spendsLength; i++) {
+            for (uint256 i = 0; i < spendsLength;) {
                 spendHashes[i] = _hashSpendLimit(permission.spends[i]);
+                unchecked { ++i; }
             }
             LibSort.sort(spendHashes);
-            for (uint256 i = 1; i < spendsLength; i++) {
+            for (uint256 i = 1; i < spendsLength;) {
                 if (spendHashes[i] == spendHashes[i - 1]) {
                     revert JustaPermissionManager_DuplicateSpendLimit(permission.spends[i].token);
                 }
+                unchecked { ++i; }
             }
         }
 
@@ -470,7 +471,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // STEP 1: CHECK EXECUTION PERMISSIONS (FIRST - FAIL FAST)
         // ============================================================
         uint256 callsLength = calls.length;
-        for (uint256 i = 0; i < callsLength; i++) {
+        for (uint256 i = 0; i < callsLength;) {
             // Prevent targeting self (privilege escalation)
             if (calls[i].target == address(this)) {
                 revert JustaPermissionManager_CannotTargetSelf();
@@ -490,6 +491,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             if (!_isCallAuthorized(permission, calls[i].target, selector)) {
                 revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
             }
+            unchecked { ++i; }
         }
 
         // ============================================================
@@ -501,12 +503,13 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // and initialize their transfer amounts as zero.
         // Used for the check on their before and after balances.
         uint256 spendsLength = permission.spends.length;
-        for (uint256 i = 0; i < spendsLength; i++) {
+        for (uint256 i = 0; i < spendsLength;) {
             address token = permission.spends[i].token;
             if (token != NATIVE_TOKEN) {
                 t.erc20s.p(token);
                 t.transferAmounts.p(uint256(0));
             }
+            unchecked { ++i; }
         }
 
         // Parse calldata for token operations.
@@ -589,15 +592,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // ============================================================
         _executeBatch(permission.account, calls);
 
-        // Emit events for each call
-        for (uint256 i = 0; i < callsLength; i++) {
-            emit CallExecuted(
-                hash,
-                calls[i].target,
-                calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : bytes4(0),
-                calls[i].value
-            );
-        }
+        emit CallsExecuted(hash);
 
         // ============================================================
         // STEP 4: CHECK SPEND LIMITS (AFTER EXECUTION)
@@ -696,14 +691,16 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     function getHash(Permission calldata permission) public view returns (bytes32) {
         uint256 callsLength = permission.calls.length;
         bytes32[] memory callHashes = new bytes32[](callsLength);
-        for (uint256 i = 0; i < callsLength; i++) {
+        for (uint256 i = 0; i < callsLength;) {
             callHashes[i] = _hashCallPermission(permission.calls[i]);
+            unchecked { ++i; }
         }
 
         uint256 spendsLength = permission.spends.length;
         bytes32[] memory spendHashes = new bytes32[](spendsLength);
-        for (uint256 i = 0; i < spendsLength; i++) {
+        for (uint256 i = 0; i < spendsLength;) {
             spendHashes[i] = _hashSpendLimit(permission.spends[i]);
+            unchecked { ++i; }
         }
 
         return _hashTypedData(
@@ -740,6 +737,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         pure
         returns (uint256)
     {
+        if (period == SpendPeriod.Forever) {
+            return 1; // Non-zero to differentiate from not set.
+        }
         if (period == SpendPeriod.Minute) {
             return Math.rawMul(Math.rawDiv(unixTimestamp, 60), 60);
         }
@@ -759,9 +759,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         }
         if (period == SpendPeriod.Year) {
             return DateTimeLib.dateToTimestamp(year, 1, 1);
-        }
-        if (period == SpendPeriod.Forever) {
-            return 1; // Non-zero to differentiate from not set.
         }
         revert(); // We shouldn't hit here.
     }
@@ -810,26 +807,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         returns (bool)
     {
         uint256 callsLength = permission.calls.length;
-        for (uint256 i = 0; i < callsLength; i++) {
-            // Exact match
-            if (permission.calls[i].target == target && permission.calls[i].selector == selector) {
-                return true;
-            }
+        for (uint256 i = 0; i < callsLength;) {
+            bool targetMatch = permission.calls[i].target == target || permission.calls[i].target == ANY_TARGET;
+            bool selectorMatch = permission.calls[i].selector == selector || permission.calls[i].selector == ANY_FN_SEL;
 
-            // Wildcard target (ANY_TARGET) with exact selector
-            if (permission.calls[i].target == ANY_TARGET && permission.calls[i].selector == selector) {
+            if (targetMatch && selectorMatch) {
                 return true;
             }
-
-            // Exact target with wildcard selector (ANY_FN_SEL)
-            if (permission.calls[i].target == target && permission.calls[i].selector == ANY_FN_SEL) {
-                return true;
-            }
-
-            // Both wildcards (ANY_TARGET + ANY_FN_SEL)
-            if (permission.calls[i].target == ANY_TARGET && permission.calls[i].selector == ANY_FN_SEL) {
-                return true;
-            }
+            unchecked { ++i; }
         }
 
         return false;
@@ -849,7 +834,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // Check ALL spend limits for this token (supports multiple periods per token)
         bool found = false;
         uint256 spendsLength = permission.spends.length;
-        for (uint256 i = 0; i < spendsLength; i++) {
+        for (uint256 i = 0; i < spendsLength;) {
             if (permission.spends[i].token == token) {
                 found = true;
                 bytes32 spendLimitHash = _hashSpendLimit(permission.spends[i]);
@@ -863,6 +848,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 );
                 // Don't break - continue checking all limits for this token
             }
+            unchecked { ++i; }
         }
 
         // If token has no spend limit configured, revert
