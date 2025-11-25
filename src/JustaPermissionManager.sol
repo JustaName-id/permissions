@@ -8,6 +8,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
+import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 
 import { EIP712 } from "solady/utils/EIP712.sol";
 import { ReentrancyGuard } from "solady/utils/ReentrancyGuard.sol";
@@ -595,9 +596,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
         // ============================================================
-        for (uint256 i = 0; i < callsLength; i++) {
-            _execute(permission.account, calls[i].target, calls[i].value, calls[i].data);
+        _executeBatch(permission.account, calls);
 
+        // Emit events for each call
+        for (uint256 i = 0; i < callsLength; i++) {
             emit CallExecuted(
                 hash,
                 calls[i].target,
@@ -992,8 +994,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.period));
     }
 
-    function _execute(address account, address target, uint256 value, bytes memory data) internal {
-        JustanAccount(payable(account)).execute({ target: target, value: value, data: data });
+    function _executeBatch(address account, Call[] calldata calls) internal {
+        JustanAccount(payable(account)).executeBatch(abi.decode(abi.encode(calls), (BaseAccount.Call[])));
     }
 
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {

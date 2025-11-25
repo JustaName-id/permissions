@@ -9,8 +9,12 @@ remappings = [
     "forge-std/=lib/forge-std/src/",
     "solady/=lib/solady/src/",
     "justanaccount/=lib/justanaccount/src/",
-    "safe-singleton-deployer-sol/=lib/justanaccount/lib/safe-singleton-deployer-sol/"
+    "safe-singleton-deployer-sol/=lib/justanaccount/lib/safe-singleton-deployer-sol/",
+    "@account-abstraction/=lib/justanaccount/lib/account-abstraction/contracts/"
 ]
+
+optimizer = true
+optimizer_runs = 20000
 
 [fuzz]
 runs = 256
