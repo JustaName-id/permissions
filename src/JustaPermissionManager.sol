@@ -235,6 +235,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         DynamicArrayLib.DynamicArray transferAmounts;
         DynamicArrayLib.DynamicArray permit2ERC20s;
         DynamicArrayLib.DynamicArray permit2Spenders;
+        uint256 totalNativeSpend;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -470,122 +471,27 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // ============================================================
         // STEP 1: CHECK EXECUTION PERMISSIONS (FIRST - FAIL FAST)
         // ============================================================
-        uint256 callsLength = calls.length;
-        for (uint256 i = 0; i < callsLength;) {
-            // Prevent targeting self (privilege escalation)
-            if (calls[i].target == address(this)) {
-                revert JustaPermissionManager_CannotTargetSelf();
-            }
-
-            // Prevent targeting the account (privilege escalation)
-            if (calls[i].target == permission.account) {
-                revert JustaPermissionManager_CannotTargetAccount();
-            }
-
-            // Extract function selector (use EMPTY_CALLDATA_FN_SEL for empty calldata)
-            bytes4 selector = calls[i].data.length >= 4
-                ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00))
-                : EMPTY_CALLDATA_FN_SEL;
-
-            // Check if this call is authorized
-            if (!_isCallAuthorized(permission, calls[i].target, selector)) {
-                revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
-            }
-            unchecked { ++i; }
-        }
+        _validateCalls(permission, calls);
 
         // ============================================================
         // STEP 2: SPEND TRACKING SETUP
         // ============================================================
         ExecuteTemps memory t;
 
-        // Collect all ERC20 tokens that need to be guarded,
-        // and initialize their transfer amounts as zero.
-        // Used for the check on their before and after balances.
-        uint256 spendsLength = permission.spends.length;
-        for (uint256 i = 0; i < spendsLength;) {
-            address token = permission.spends[i].token;
-            if (token != NATIVE_TOKEN) {
-                t.erc20s.p(token);
-                t.transferAmounts.p(uint256(0));
-            }
-            unchecked { ++i; }
-        }
+        // Initialize spend tracking from permission's spend limits
+        _initializeSpendTracking(permission.spends, t);
 
-        // Parse calldata for token operations.
-        // We only filter based on functions that use `msg.sender`.
-        // For signature-based approvals (e.g. permit), we can't guard them
-        // as anyone can submit the calldata and signature directly.
-        uint256 totalNativeSpend;
-        for (uint256 i; i < callsLength; ++i) {
-            address target = calls[i].target;
-            uint256 value = calls[i].value;
-            bytes calldata data = calls[i].data;
-
-            if (value != 0) totalNativeSpend += value;
-            if (data.length < 4) continue;
-
-            uint32 fnSel = uint32(bytes4(LibBytes.loadCalldata(data, 0x00)));
-
-            // `transfer(address,uint256)` - 0xa9059cbb
-            if (fnSel == 0xa9059cbb) {
-                t.erc20s.p(target);
-                t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `amount`
-            }
-
-            // `transferFrom(address,address,uint256)` - 0x23b872dd
-            // The account may have existing ERC20 allowances. If `transferFrom` is used
-            // to transfer from the permission account, treat it as outflow.
-            if (fnSel == 0x23b872dd) {
-                address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
-                address to = LibBytes.loadCalldata(data, 0x24).lsbToAddress();
-                // Skip if this is a self-to-self transfer
-                if (from == permission.account && to == permission.account) continue;
-                if (LibBytes.loadCalldata(data, 0x44) == 0) continue; // `amount == 0`
-                // Only track if account is the sender
-                if (from == permission.account) {
-                    t.erc20s.p(target);
-                    t.transferAmounts.p(LibBytes.loadCalldata(data, 0x44)); // `amount`
-                }
-            }
-
-            // `approve(address,uint256)` - 0x095ea7b3
-            // We have to revoke any new approvals after the batch, else a bad app can
-            // leave an approval to let them drain unlimited tokens after the batch.
-            if (fnSel == 0x095ea7b3) {
-                if (LibBytes.loadCalldata(data, 0x24) == 0) continue; // `amount == 0`
-                t.approvedERC20s.p(target);
-                t.approvalSpenders.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `spender`
-                t.erc20s.p(target); // `token`
-                t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `amount`
-            }
-
-            // Permit2 `approve(address,address,uint160,uint48)` - 0x87517c45
-            // For ERC20 tokens giving Permit2 infinite approvals by default,
-            // the approve method on Permit2 acts like a approve method on the ERC20.
-            if (fnSel == 0x87517c45) {
-                if (target != PERMIT2) continue;
-                if (LibBytes.loadCalldata(data, 0x44) == 0) continue; // `amount == 0`
-                t.permit2ERC20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
-                t.permit2Spenders.p(LibBytes.loadCalldata(data, 0x24).lsbToAddress()); // `spender`
-                t.erc20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
-                t.transferAmounts.p(LibBytes.loadCalldata(data, 0x44)); // `amount`
-            }
-        }
+        // Parse calldata for token operations
+        _parseCallsForTokenOps(permission.account, calls, t);
 
         // Sum transfer amounts, grouped by the ERC20s. In-place.
-        // Only call groupSum if there are tokens to process
         uint256 erc20sLength = t.erc20s.length();
         if (erc20sLength > 0) {
             LibSort.groupSum(t.erc20s.data, t.transferAmounts.data);
         }
 
         // Collect the ERC20 balances before the batch execution.
-        uint256[] memory balancesBefore = DynamicArrayLib.malloc(erc20sLength);
-        for (uint256 i; i < erc20sLength; ++i) {
-            address token = t.erc20s.getAddress(i);
-            balancesBefore.set(i, SafeTransferLib.balanceOf(token, permission.account));
-        }
+        uint256[] memory balancesBefore = _collectBalancesBefore(permission.account, t);
 
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
@@ -598,56 +504,19 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // STEP 4: CHECK SPEND LIMITS (AFTER EXECUTION)
         // ============================================================
 
-        // Perform after the execution, so that in case `calls` contain
-        // a spend limit update, it will affect the increment.
-        if (totalNativeSpend != 0) {
-            _checkAndIncrementSpend(hash, permission, NATIVE_TOKEN, totalNativeSpend);
+        // Check native token spend limit
+        if (t.totalNativeSpend != 0) {
+            _checkAndIncrementSpend(hash, permission, NATIVE_TOKEN, t.totalNativeSpend);
         }
 
-        // Revoke all non-zero approvals that have been made.
-        // As spend permissions are whitelist style, we need to make sure that
-        // approvals are revoked. This is to prevent sidestepping the guard.
-        uint256 approvedLength = t.approvedERC20s.length();
-        for (uint256 i; i < approvedLength; ++i) {
-            address token = t.approvedERC20s.getAddress(i);
-            address spender = t.approvalSpenders.getAddress(i);
-            SafeTransferLib.safeApprove(token, spender, 0);
-            // Verify the approval was actually revoked
-            if (IERC20(token).allowance(permission.account, spender) != 0) {
-                revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
-            }
-        }
+        // Revoke all non-zero approvals that have been made
+        _revokeERC20Approvals(permission.account, t);
 
-        // Revoke all non-zero Permit2 direct approvals that have been made.
-        uint256 permit2Length = t.permit2ERC20s.length();
-        for (uint256 i; i < permit2Length; ++i) {
-            address token = t.permit2ERC20s.getAddress(i);
-            address spender = t.permit2Spenders.getAddress(i);
-            SafeTransferLib.permit2Lockdown(token, spender);
-        }
+        // Revoke all non-zero Permit2 direct approvals that have been made
+        _revokePermit2Approvals(t);
 
-        // Increments the spent amounts.
-        for (uint256 i; i < erc20sLength; ++i) {
-            address token = t.erc20s.getAddress(i);
-
-            // While we can actually just use the difference before and after,
-            // we also want to let the sum of the transfer amounts in the calldata to be capped.
-            // This prevents tokens from being used as flash loans, and also handles cases
-            // where the actual token transfers might not match the calldata amounts.
-            // There is no strict definition on what constitutes spending,
-            // and we want to be as conservative as possible.
-            uint256 spentAmount = Math.max(
-                t.transferAmounts.get(i),
-                Math.saturatingSub(
-                    balancesBefore.get(i),
-                    SafeTransferLib.balanceOf(token, permission.account)
-                )
-            );
-
-            if (spentAmount > 0) {
-                _checkAndIncrementSpend(hash, permission, token, spentAmount);
-            }
-        }
+        // Process and validate spend limits for all tracked tokens
+        _processTokenSpendLimits(hash, permission, t, balancesBefore);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -973,6 +842,237 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     function _executeBatch(address account, BaseAccount.Call[] calldata calls) internal {
         JustanAccount(payable(account)).executeBatch(calls);
+    }
+
+    /**
+     * @notice Validates all calls in the batch for authorization.
+     * @dev Checks: no self-targeting, no account-targeting, authorized selectors.
+     */
+    function _validateCalls(
+        Permission calldata permission,
+        BaseAccount.Call[] calldata calls
+    ) internal view {
+        uint256 callsLength = calls.length;
+        for (uint256 i = 0; i < callsLength;) {
+            // Prevent targeting self (privilege escalation)
+            if (calls[i].target == address(this)) {
+                revert JustaPermissionManager_CannotTargetSelf();
+            }
+
+            // Prevent targeting the account (privilege escalation)
+            if (calls[i].target == permission.account) {
+                revert JustaPermissionManager_CannotTargetAccount();
+            }
+
+            // Extract function selector (use EMPTY_CALLDATA_FN_SEL for empty calldata)
+            bytes4 selector = calls[i].data.length >= 4
+                ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00))
+                : EMPTY_CALLDATA_FN_SEL;
+
+            // Check if this call is authorized
+            if (!_isCallAuthorized(permission, calls[i].target, selector)) {
+                revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
+            }
+            unchecked { ++i; }
+        }
+    }
+
+    /**
+     * @notice Initializes spend tracking arrays from permission's spend limits.
+     */
+    function _initializeSpendTracking(
+        SpendLimit[] calldata spends,
+        ExecuteTemps memory t
+    ) internal pure {
+        uint256 spendsLength = spends.length;
+        for (uint256 i = 0; i < spendsLength;) {
+            address token = spends[i].token;
+            if (token != NATIVE_TOKEN) {
+                t.erc20s.p(token);
+                t.transferAmounts.p(uint256(0));
+            }
+            unchecked { ++i; }
+        }
+    }
+
+    /**
+     * @notice Parses calls to track token operations (transfer, transferFrom, approve, permit2).
+     */
+    function _parseCallsForTokenOps(
+        address permissionAccount,
+        BaseAccount.Call[] calldata calls,
+        ExecuteTemps memory t
+    ) internal pure {
+        uint256 callsLength = calls.length;
+        for (uint256 i; i < callsLength; ++i) {
+            _parseSingleCallForTokenOps(permissionAccount, calls[i], t);
+        }
+    }
+
+    /**
+     * @notice Parses a single call for token operations.
+     */
+    function _parseSingleCallForTokenOps(
+        address permissionAccount,
+        BaseAccount.Call calldata call,
+        ExecuteTemps memory t
+    ) internal pure {
+        address target = call.target;
+        uint256 value = call.value;
+        bytes calldata data = call.data;
+
+        if (value != 0) t.totalNativeSpend += value;
+        if (data.length < 4) return;
+
+        uint32 fnSel = uint32(bytes4(LibBytes.loadCalldata(data, 0x00)));
+
+        // `transfer(address,uint256)` - 0xa9059cbb
+        if (fnSel == 0xa9059cbb) {
+            t.erc20s.p(target);
+            t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `amount`
+            return;
+        }
+
+        // `transferFrom(address,address,uint256)` - 0x23b872dd
+        if (fnSel == 0x23b872dd) {
+            _handleTransferFrom(permissionAccount, target, data, t);
+            return;
+        }
+
+        // `approve(address,uint256)` - 0x095ea7b3
+        if (fnSel == 0x095ea7b3) {
+            _handleApprove(target, data, t);
+            return;
+        }
+
+        // Permit2 `approve(address,address,uint160,uint48)` - 0x87517c45
+        if (fnSel == 0x87517c45) {
+            _handlePermit2Approve(target, data, t);
+        }
+    }
+
+    /**
+     * @notice Handles transferFrom token operation parsing.
+     */
+    function _handleTransferFrom(
+        address permissionAccount,
+        address target,
+        bytes calldata data,
+        ExecuteTemps memory t
+    ) internal pure {
+        address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
+        address to = LibBytes.loadCalldata(data, 0x24).lsbToAddress();
+        // Skip if this is a self-to-self transfer
+        if (from == permissionAccount && to == permissionAccount) return;
+        if (LibBytes.loadCalldata(data, 0x44) == 0) return; // `amount == 0`
+        // Only track if account is the sender
+        if (from == permissionAccount) {
+            t.erc20s.p(target);
+            t.transferAmounts.p(LibBytes.loadCalldata(data, 0x44)); // `amount`
+        }
+    }
+
+    /**
+     * @notice Handles approve token operation parsing.
+     */
+    function _handleApprove(
+        address target,
+        bytes calldata data,
+        ExecuteTemps memory t
+    ) internal pure {
+        if (LibBytes.loadCalldata(data, 0x24) == 0) return; // `amount == 0`
+        t.approvedERC20s.p(target);
+        t.approvalSpenders.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `spender`
+        t.erc20s.p(target); // `token`
+        t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `amount`
+    }
+
+    /**
+     * @notice Handles Permit2 approve operation parsing.
+     */
+    function _handlePermit2Approve(
+        address target,
+        bytes calldata data,
+        ExecuteTemps memory t
+    ) internal pure {
+        if (target != PERMIT2) return;
+        if (LibBytes.loadCalldata(data, 0x44) == 0) return; // `amount == 0`
+        t.permit2ERC20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
+        t.permit2Spenders.p(LibBytes.loadCalldata(data, 0x24).lsbToAddress()); // `spender`
+        t.erc20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
+        t.transferAmounts.p(LibBytes.loadCalldata(data, 0x44)); // `amount`
+    }
+
+    /**
+     * @notice Collects ERC20 balances before batch execution.
+     */
+    function _collectBalancesBefore(
+        address account,
+        ExecuteTemps memory t
+    ) internal view returns (uint256[] memory balancesBefore) {
+        uint256 erc20sLength = t.erc20s.length();
+        balancesBefore = DynamicArrayLib.malloc(erc20sLength);
+        for (uint256 i; i < erc20sLength; ++i) {
+            address token = t.erc20s.getAddress(i);
+            balancesBefore.set(i, SafeTransferLib.balanceOf(token, account));
+        }
+    }
+
+    /**
+     * @notice Revokes all ERC20 approvals made during the batch.
+     */
+    function _revokeERC20Approvals(
+        address permissionAccount,
+        ExecuteTemps memory t
+    ) internal {
+        uint256 approvedLength = t.approvedERC20s.length();
+        for (uint256 i; i < approvedLength; ++i) {
+            address token = t.approvedERC20s.getAddress(i);
+            address spender = t.approvalSpenders.getAddress(i);
+            SafeTransferLib.safeApprove(token, spender, 0);
+            // Verify the approval was actually revoked
+            if (IERC20(token).allowance(permissionAccount, spender) != 0) {
+                revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
+            }
+        }
+    }
+
+    /**
+     * @notice Revokes all Permit2 approvals made during the batch.
+     */
+    function _revokePermit2Approvals(ExecuteTemps memory t) internal {
+        uint256 permit2Length = t.permit2ERC20s.length();
+        for (uint256 i; i < permit2Length; ++i) {
+            address token = t.permit2ERC20s.getAddress(i);
+            address spender = t.permit2Spenders.getAddress(i);
+            SafeTransferLib.permit2Lockdown(token, spender);
+        }
+    }
+
+    /**
+     * @notice Processes and validates spend limits for all tracked tokens.
+     */
+    function _processTokenSpendLimits(
+        bytes32 hash,
+        Permission calldata permission,
+        ExecuteTemps memory t,
+        uint256[] memory balancesBefore
+    ) internal {
+        uint256 erc20sLength = t.erc20s.length();
+        for (uint256 i; i < erc20sLength; ++i) {
+            address token = t.erc20s.getAddress(i);
+            uint256 spentAmount = Math.max(
+                t.transferAmounts.get(i),
+                Math.saturatingSub(
+                    balancesBefore.get(i),
+                    SafeTransferLib.balanceOf(token, permission.account)
+                )
+            );
+
+            if (spentAmount > 0) {
+                _checkAndIncrementSpend(hash, permission, token, spentAmount);
+            }
+        }
     }
 
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
