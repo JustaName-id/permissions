@@ -226,15 +226,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     /**
-     * @notice A single call to execute (matches ERC7821 Call struct pattern)
-     */
-    struct Call {
-        address target;
-        uint256 value;
-        bytes data;
-    }
-
-    /**
      * @notice Temporary storage for tracking during batch execution
      */
     struct ExecuteTemps {
@@ -461,7 +452,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     function executeBatch(
         Permission calldata permission,
-        Call[] calldata calls
+        BaseAccount.Call[] calldata calls
     )
         external
         nonReentrant
@@ -994,8 +985,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.period));
     }
 
-    function _executeBatch(address account, Call[] calldata calls) internal {
-        JustanAccount(payable(account)).executeBatch(abi.decode(abi.encode(calls), (BaseAccount.Call[])));
+    function _executeBatch(address account, BaseAccount.Call[] calldata calls) internal {
+        JustanAccount(payable(account)).executeBatch(calls);
     }
 
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
