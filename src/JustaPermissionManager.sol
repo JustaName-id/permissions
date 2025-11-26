@@ -596,13 +596,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
-        // ============================================================
-        // Copy calldata to memory for consistency with _executeBatch
-        BaseAccount.Call[] memory callsMemory = new BaseAccount.Call[](calls.length);
-        for (uint256 i; i < calls.length; ++i) {
-            callsMemory[i] = calls[i];
-        }
-        _executeBatch(permission.account, callsMemory);
+
+        _executeBatch(permission.account, calls);
 
         emit CallsExecuted(hash);
 
