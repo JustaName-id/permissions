@@ -574,15 +574,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         }
 
         // Sum transfer amounts, grouped by the ERC20s. In-place.
-        // Only call groupSum if there are tokens to process
-        uint256 erc20sLength = t.erc20s.length();
-        if (erc20sLength > 0) {
+
+        if (t.erc20s.length() > 0) {
             LibSort.groupSum(t.erc20s.data, t.transferAmounts.data);
         }
 
         // Collect the ERC20 balances before the batch execution.
-        uint256[] memory balancesBefore = DynamicArrayLib.malloc(erc20sLength);
-        for (uint256 i; i < erc20sLength; ++i) {
+        uint256[] memory balancesBefore = DynamicArrayLib.malloc(t.erc20s.length());
+        for (uint256 i; i < t.erc20s.length(); ++i) {
             address token = t.erc20s.getAddress(i);
             balancesBefore.set(i, SafeTransferLib.balanceOf(token, permission.account));
         }
@@ -607,27 +606,67 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // Revoke all non-zero approvals that have been made.
         // As spend permissions are whitelist style, we need to make sure that
         // approvals are revoked. This is to prevent sidestepping the guard.
+        // Note: Approvals must be revoked through the account's execute
+        // because msg.sender in ERC20.approve must be the account, not the manager.
         uint256 approvedLength = t.approvedERC20s.length();
-        for (uint256 i; i < approvedLength; ++i) {
-            address token = t.approvedERC20s.getAddress(i);
-            address spender = t.approvalSpenders.getAddress(i);
-            SafeTransferLib.safeApprove(token, spender, 0);
-            // Verify the approval was actually revoked
-            if (IERC20(token).allowance(permission.account, spender) != 0) {
-                revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
+        if (approvedLength > 0) {
+            for (uint256 i; i < approvedLength; ++i) {
+                address token = t.approvedERC20s.getAddress(i);
+                address spender = t.approvalSpenders.getAddress(i);
+                JustanAccount(payable(permission.account)).execute({
+                    target: token,
+                    value: 0,
+                    data: abi.encodeWithSelector(IERC20.approve.selector, spender, 0)
+                });
+            }
+            
+            // Verify all approvals were revoked
+            for (uint256 i; i < approvedLength; ++i) {
+                address token = t.approvedERC20s.getAddress(i);
+                address spender = t.approvalSpenders.getAddress(i);
+                if (IERC20(token).allowance(permission.account, spender) != 0) {
+                    revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
+                }
             }
         }
 
         // Revoke all non-zero Permit2 direct approvals that have been made.
+        // Note: permit2Lockdown must be called from the account (owner) to revoke approvals
+        // that were set by the account. Execute through account's executeBatch.
         uint256 permit2Length = t.permit2ERC20s.length();
-        for (uint256 i; i < permit2Length; ++i) {
-            address token = t.permit2ERC20s.getAddress(i);
-            address spender = t.permit2Spenders.getAddress(i);
-            SafeTransferLib.permit2Lockdown(token, spender);
+        if (permit2Length > 0) {
+            // Permit2.lockdown takes an array of (address token, address spender) tuples
+            // We'll construct one call with all approvals to revoke
+            // The function signature is: lockdown((address,address)[])
+            // Selector: 0xcc53287f
+            bytes memory approvalsData = new bytes(32 + permit2Length * 64); // offset + array length + tuples
+            // Store offset (0x20) at position 0
+            assembly {
+                mstore(add(approvalsData, 0x20), 0x20)
+                mstore(add(approvalsData, 0x40), permit2Length)
+            }
+            // Store each (token, spender) tuple
+            for (uint256 i; i < permit2Length; ++i) {
+                address token = t.permit2ERC20s.getAddress(i);
+                address spender = t.permit2Spenders.getAddress(i);
+                assembly {
+                    let offset := add(add(approvalsData, 0x40), mul(i, 0x40))
+                    mstore(add(offset, 0x20), shl(96, token))
+                    mstore(add(offset, 0x40), shl(96, spender))
+                }
+            }
+            
+            BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
+            permit2RevokeCalls[0] = BaseAccount.Call({
+                target: PERMIT2,
+                value: 0,
+                data: abi.encodePacked(bytes4(0xcc53287f), approvalsData)
+            });
+           JustanAccount(payable(permission.account)).executeBatch(permit2RevokeCalls);
         }
 
         // Increments the spent amounts.
-        for (uint256 i; i < erc20sLength; ++i) {
+        for (uint256 i; i < t.erc20s.length(); ++i) {
             address token = t.erc20s.getAddress(i);
 
             // While we can actually just use the difference before and after,

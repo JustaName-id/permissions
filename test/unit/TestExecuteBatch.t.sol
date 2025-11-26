@@ -453,20 +453,35 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         // Verify tokens were transferred
         assertEq(erc20.balanceOf(randomUser), 40 ether);
 
+        // Verify cumulative spend is tracked correctly (20 + 20 = 40)
+        JustaPermissionManager.PeriodSpend memory periodAfterTwoCalls = manager.getLastUpdatedPeriod(
+            permission,
+            permission.spends[0]
+        );
+        assertEq(periodAfterTwoCalls.spend, 40 ether);
+
         // Third call - try to spend an amount that will exceed the limit
-        // The contract tracks spending cumulatively, so at some point it will exceed
+        // The contract tracks spending cumulatively: 40 + 50 = 90, still under 100
+        // So we need to spend more: 40 + 61 = 101 > 100, should revert
         BaseAccount.Call[] memory calls3 = new BaseAccount.Call[](1);
         calls3[0] = BaseAccount.Call({
             target: address(erc20),
             value: 0,
-            data: abi.encodeWithSelector(IERC20.transfer.selector, randomUser, 50 ether)
+            data: abi.encodeWithSelector(IERC20.transfer.selector, randomUser, 61 ether)
         });
 
         // This should revert because the cumulative spend exceeds the allowance
-        vm.expectRevert(); // Will revert with ExceededSpendLimit
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
+                101 ether,
+                100 ether
+            )
+        );
         vm.prank(spender);
         manager.executeBatch(permission, calls3);
     }
 }
+
 
 
