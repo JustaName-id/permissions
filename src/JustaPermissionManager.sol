@@ -606,19 +606,23 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // Revoke all non-zero approvals that have been made.
         // As spend permissions are whitelist style, we need to make sure that
         // approvals are revoked. This is to prevent sidestepping the guard.
-        // Note: Approvals must be revoked through the account's execute
+        // Note: Approvals must be revoked through the account's executeBatch
         // because msg.sender in ERC20.approve must be the account, not the manager.
         uint256 approvedLength = t.approvedERC20s.length();
         if (approvedLength > 0) {
+            BaseAccount.Call[] memory revokeCalls = new BaseAccount.Call[](approvedLength);
             for (uint256 i; i < approvedLength; ++i) {
-                address token = t.approvedERC20s.getAddress(i);
-                address spender = t.approvalSpenders.getAddress(i);
-                JustanAccount(payable(permission.account)).execute({
-                    target: token,
+                revokeCalls[i] = BaseAccount.Call({
+                    target: t.approvedERC20s.getAddress(i),
                     value: 0,
-                    data: abi.encodeWithSelector(IERC20.approve.selector, spender, 0)
+                    data: abi.encodeWithSelector(
+                        IERC20.approve.selector,
+                        t.approvalSpenders.getAddress(i),
+                        0
+                    )
                 });
             }
+            JustanAccount(payable(permission.account)).executeBatch(revokeCalls);
             
             // Verify all approvals were revoked
             for (uint256 i; i < approvedLength; ++i) {
