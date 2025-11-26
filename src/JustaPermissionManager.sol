@@ -19,6 +19,8 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 import { FixedPointMathLib as Math } from "solady/utils/FixedPointMathLib.sol";
 import { DateTimeLib } from "solady/utils/DateTimeLib.sol";
 
+import {IPermit2} from "@permit2/src/interfaces/IPermit2.sol";
+
 /**
  * @title JustaPermissionManager
  *
@@ -649,7 +651,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (permit2Length > 0) {
             // Permit2.lockdown takes an array of (address token, address spender) tuples
             // The function signature is: lockdown((address,address)[])
-            // Selector: 0xcc53287f
             TokenSpenderPair[] memory approvals = new TokenSpenderPair[](permit2Length);
             for (uint256 i; i < permit2Length; ++i) {
                 approvals[i] = TokenSpenderPair({
@@ -662,7 +663,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             permit2RevokeCalls[0] = BaseAccount.Call({
                 target: PERMIT2,
                 value: 0,
-                data: abi.encodeWithSelector(bytes4(0xcc53287f), approvals)
+                data: abi.encodeWithSelector(IPermit2.lockdown.selector, approvals)
             });
             _executeBatch(permission.account, permit2RevokeCalls);
         }
