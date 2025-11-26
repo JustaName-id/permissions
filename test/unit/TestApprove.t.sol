@@ -4,8 +4,9 @@ pragma solidity 0.8.30;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
+import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
 
 contract TestApprove is JustaPermissionManagerTestBase {
 
@@ -37,18 +38,10 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveMultipleCallPermissions() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](3);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
-        calls[1] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.approve.selector
-        });
-        calls[2] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transferFrom.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
+        calls[1] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.approve.selector });
+        calls[2] =
+            JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transferFrom.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -76,10 +69,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
         ERC20Mock erc20Two = new ERC20Mock();
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: ANY_TARGET,
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: ANY_TARGET, selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -117,10 +107,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveWithWildcardSelector() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: ANY_FN_SEL
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: ANY_FN_SEL });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -172,10 +159,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveSameTokenDifferentPeriods() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         // Same token with different periods should be allowed
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
@@ -213,9 +197,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                randomUser,
-                account
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, randomUser, account
             )
         );
         vm.prank(randomUser);
@@ -224,10 +206,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnZeroSpender() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -253,10 +232,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnInvalidStartEnd() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -289,10 +265,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnStartEqualsEnd() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -314,9 +287,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidStartEnd.selector,
-                sameTime,
-                sameTime
+                JustaPermissionManager.JustaPermissionManager_InvalidStartEnd.selector, sameTime, sameTime
             )
         );
         vm.prank(account);
@@ -382,7 +353,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
         calls[0] = JustaPermissionManager.CallPermission({
             target: address(erc20),
             selector: bytes4(0) // Zero selector
-        });
+         });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -408,10 +379,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnZeroTokenInSpendLimit() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -437,10 +405,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnZeroAllowance() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -490,8 +455,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ERC721TokenNotSupported.selector,
-                address(erc721)
+                JustaPermissionManager.JustaPermissionManager_ERC721TokenNotSupported.selector, address(erc721)
             )
         );
         vm.prank(account);
@@ -524,8 +488,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ERC1155TokenNotSupported.selector,
-                address(erc1155)
+                JustaPermissionManager.JustaPermissionManager_ERC1155TokenNotSupported.selector, address(erc1155)
             )
         );
         vm.prank(account);
@@ -534,10 +497,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
     function test_ApproveRevertsOnDuplicateSpendLimit() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         // Exact duplicate spend limits
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
@@ -564,8 +524,7 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector,
-                address(erc20)
+                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector, address(erc20)
             )
         );
         vm.prank(account);
@@ -636,5 +595,5 @@ contract TestApprove is JustaPermissionManagerTestBase {
         vm.prank(account);
         manager.approve(permission);
     }
-}
 
+}

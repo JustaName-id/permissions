@@ -4,9 +4,10 @@ pragma solidity 0.8.30;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
+import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 
 contract TestExecuteBatch is JustaPermissionManagerTestBase {
 
@@ -58,11 +59,7 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         manager.approve(permission);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: randomUser,
-            value: 0.5 ether,
-            data: ""
-        });
+        calls[0] = BaseAccount.Call({ target: randomUser, value: 0.5 ether, data: "" });
 
         uint256 balanceBefore = randomUser.balance;
 
@@ -87,9 +84,7 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                randomUser,
-                spender
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, randomUser, spender
             )
         );
         vm.prank(randomUser);
@@ -136,10 +131,7 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
 
     function test_ExecuteBatchRevertsBeforePermissionStart() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -275,9 +267,7 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
-                101 ether,
-                100 ether
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector, 101 ether, 100 ether
             )
         );
         vm.prank(spender);
@@ -333,7 +323,9 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         calls[0] = BaseAccount.Call({
             target: account,
             value: 0,
-            data: abi.encodeWithSelector(bytes4(keccak256("executeBatch((address,uint256,bytes)[])")), new BaseAccount.Call[](0))
+            data: abi.encodeWithSelector(
+                bytes4(keccak256("executeBatch((address,uint256,bytes)[])")), new BaseAccount.Call[](0)
+            )
         });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetAccount.selector);
@@ -366,14 +358,8 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
 
     function test_ExecuteBatchMultipleCalls() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
-        calls[1] = JustaPermissionManager.CallPermission({
-            target: randomUser,
-            selector: EMPTY_CALLDATA_FN_SEL
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
+        calls[1] = JustaPermissionManager.CallPermission({ target: randomUser, selector: EMPTY_CALLDATA_FN_SEL });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -406,11 +392,7 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
             value: 0,
             data: abi.encodeWithSelector(IERC20.transfer.selector, randomUser, 50 ether)
         });
-        executeCalls[1] = BaseAccount.Call({
-            target: randomUser,
-            value: 0.5 ether,
-            data: ""
-        });
+        executeCalls[1] = BaseAccount.Call({ target: randomUser, value: 0.5 ether, data: "" });
 
         uint256 erc20BalanceBefore = erc20.balanceOf(randomUser);
         uint256 ethBalanceBefore = randomUser.balance;
@@ -454,10 +436,8 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         assertEq(erc20.balanceOf(randomUser), 40 ether);
 
         // Verify cumulative spend is tracked correctly (20 + 20 = 40)
-        JustaPermissionManager.PeriodSpend memory periodAfterTwoCalls = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory periodAfterTwoCalls =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(periodAfterTwoCalls.spend, 40 ether);
 
         // Third call - try to spend an amount that will exceed the limit
@@ -473,15 +453,11 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         // This should revert because the cumulative spend exceeds the allowance
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
-                101 ether,
-                100 ether
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector, 101 ether, 100 ether
             )
         );
         vm.prank(spender);
         manager.executeBatch(permission, calls3);
     }
+
 }
-
-
-

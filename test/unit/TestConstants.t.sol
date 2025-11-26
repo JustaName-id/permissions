@@ -17,7 +17,5 @@ contract TestConstants is JustaPermissionManagerTestBase {
         assertEq(manager.ANY_FN_SEL(), bytes4(0x32323232));
         assertEq(manager.EMPTY_CALLDATA_FN_SEL(), bytes4(0xe0e0e0e0));
     }
+
 }
-
-
-

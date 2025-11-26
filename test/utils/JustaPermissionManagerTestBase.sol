@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
+
+import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { JustanAccountFactory } from "justanaccount/JustanAccountFactory.sol";
-import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 
+import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { ERC721Mock } from "../mocks/ERC721Mock.sol";
-import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
 
 abstract contract JustaPermissionManagerTestBase is Test {
+
     JustaPermissionManager public manager;
     JustanAccount public justanAccount;
     JustanAccountFactory public factory;
@@ -95,10 +97,7 @@ abstract contract JustaPermissionManagerTestBase is Test {
 
     function _createBasicPermission() internal view returns (JustaPermissionManager.Permission memory) {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -120,10 +119,7 @@ abstract contract JustaPermissionManagerTestBase is Test {
 
     function _createPermissionWithNativeToken() internal view returns (JustaPermissionManager.Permission memory) {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: randomUser,
-            selector: EMPTY_CALLDATA_FN_SEL
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: randomUser, selector: EMPTY_CALLDATA_FN_SEL });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -145,10 +141,7 @@ abstract contract JustaPermissionManagerTestBase is Test {
 
     function _createPermissionNoSpendLimits() internal view returns (JustaPermissionManager.Permission memory) {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](0);
 
@@ -165,10 +158,7 @@ abstract contract JustaPermissionManagerTestBase is Test {
 
     function _createWildcardPermission() internal view returns (JustaPermissionManager.Permission memory) {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: ANY_TARGET,
-            selector: ANY_FN_SEL
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: ANY_TARGET, selector: ANY_FN_SEL });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -187,6 +177,5 @@ abstract contract JustaPermissionManagerTestBase is Test {
             spends: spends
         });
     }
+
 }
-
-

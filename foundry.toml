@@ -11,7 +11,7 @@ remappings = [
     "justanaccount/=lib/justanaccount/src/",
     "safe-singleton-deployer-sol/=lib/justanaccount/lib/safe-singleton-deployer-sol/",
     "@account-abstraction/=lib/justanaccount/lib/account-abstraction/contracts/",
-    "@permit2/=/lib/permit2/"
+    "@permit2/=lib/permit2/"
 ]
 
 optimizer = true

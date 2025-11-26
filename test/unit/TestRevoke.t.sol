@@ -33,9 +33,7 @@ contract TestRevoke is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                randomUser,
-                account
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, randomUser, account
             )
         );
         vm.prank(randomUser);
@@ -96,9 +94,7 @@ contract TestRevoke is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                randomUser,
-                spender
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, randomUser, spender
             )
         );
         vm.prank(randomUser);
@@ -114,7 +110,5 @@ contract TestRevoke is JustaPermissionManagerTestBase {
 
         assertTrue(manager.isRevoked(permission));
     }
+
 }
-
-
-

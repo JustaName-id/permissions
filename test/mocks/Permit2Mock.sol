@@ -6,9 +6,12 @@ pragma solidity 0.8.30;
  * @dev Only implements the approve function that the permission manager calls
  */
 contract Permit2Mock {
+
     mapping(address => mapping(address => uint160)) public allowance;
 
-    event Approval(address indexed owner, address indexed token, address indexed spender, uint160 amount, uint48 expiration);
+    event Approval(
+        address indexed owner, address indexed token, address indexed spender, uint160 amount, uint48 expiration
+    );
 
     /**
      * @notice Approve function signature: approve(address,address,uint160,uint48)
@@ -25,6 +28,5 @@ contract Permit2Mock {
     function getAllowance(address owner, address token, address spender) external view returns (uint160) {
         return allowance[owner][spender];
     }
+
 }
-
-

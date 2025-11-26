@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
+import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
 
 contract TestReentrancy is JustaPermissionManagerTestBase {
 
@@ -72,7 +73,7 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
         // Create a wrapper that attempts to call revoke twice
         // The second call should be prevented by reentrancy guard
         ReentrantWrapper wrapper = new ReentrantWrapper(address(manager), permission);
-        
+
         // This should revert because wrapper tries to call revoke twice
         // The reentrancy guard should prevent the second call
         vm.expectRevert();
@@ -88,7 +89,7 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
 
         // Create a wrapper that attempts to call revokeAsSpender twice
         ReentrantWrapper wrapper = new ReentrantWrapper(address(manager), permission);
-        
+
         // This should revert because wrapper tries to call revokeAsSpender twice
         vm.expectRevert();
         vm.prank(spender);
@@ -128,7 +129,7 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
 
         // Store permission and manager in reentrant token for reentrancy attempt
         reentrantToken.setTarget(address(manager), permission);
-        
+
         // Attempt to transfer, which will trigger reentrancy attempt
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
@@ -142,15 +143,17 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
     }
+
 }
 
 // Malicious token that attempts reentrancy during transfer
 contract ReentrantToken is ERC20Mock {
+
     JustaPermissionManager public manager;
     JustaPermissionManager.Permission public storedPermission;
     bool private _reentering;
 
-    constructor() ERC20Mock() {}
+    constructor() ERC20Mock() { }
 
     function setTarget(address _manager, JustaPermissionManager.Permission memory permission) external {
         manager = JustaPermissionManager(_manager);
@@ -163,21 +166,19 @@ contract ReentrantToken is ERC20Mock {
             _reentering = true;
             // Try to call executeBatch again (this should fail due to reentrancy guard)
             BaseAccount.Call[] memory reentrantCalls = new BaseAccount.Call[](1);
-            reentrantCalls[0] = BaseAccount.Call({
-                target: address(this),
-                value: 0,
-                data: ""
-            });
+            reentrantCalls[0] = BaseAccount.Call({ target: address(this), value: 0, data: "" });
             // This will fail due to reentrancy protection - the guard should revert
             manager.executeBatch(storedPermission, reentrantCalls);
             _reentering = false;
         }
         return super.transfer(to, amount);
     }
+
 }
 
 // Wrapper contract that attempts to call functions twice to test reentrancy guard
 contract ReentrantWrapper {
+
     JustaPermissionManager public manager;
     JustaPermissionManager.Permission public storedPermission;
     bool private _reentering;
@@ -196,7 +197,7 @@ contract ReentrantWrapper {
             // Actually, wait - we're already out of the first call, so this won't be reentrant
             // The reentrancy guard only prevents calls DURING execution, not after
             // So we need a different approach - call from within a callback
-            
+
             // For a proper test, we'd need the revoke function to call back into us
             // Since that's not possible, we'll test that the guard prevents nested calls
             // by having the first call trigger a second call via a hook
@@ -213,4 +214,5 @@ contract ReentrantWrapper {
             _reentering = false;
         }
     }
+
 }

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
+import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
 
 contract TestErrorCases is JustaPermissionManagerTestBase {
 
@@ -17,10 +18,7 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
 
     function test_ExecuteBatchRevertsOnSpendValueOverflow() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         // Use a high allowance value, but not max to allow for overflow test
         uint160 maxAllowance = type(uint160).max;
@@ -72,8 +70,7 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_SpendValueOverflow.selector,
-                uint256(maxAllowance) + 1
+                JustaPermissionManager.JustaPermissionManager_SpendValueOverflow.selector, uint256(maxAllowance) + 1
             )
         );
         vm.prank(spender);
@@ -86,10 +83,7 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
 
     function test_GetCurrentPeriodRevertsOnPeriodOverflow() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -100,7 +94,7 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
 
         // Set start time near uint48 max to cause overflow when calculating period end
         uint48 nearMaxTimestamp = type(uint48).max - 1;
-        
+
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
@@ -178,10 +172,12 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
     }
+
 }
 
 // Malicious token that prevents approval revocation
 contract MaliciousToken is ERC20 {
+
     mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => mapping(address => uint256)) private _originalAllowances; // Track original values
     bool private _revocationBlocked;
@@ -227,5 +223,5 @@ contract MaliciousToken is ERC20 {
         _transfer(from, to, amount);
         return true;
     }
-}
 
+}

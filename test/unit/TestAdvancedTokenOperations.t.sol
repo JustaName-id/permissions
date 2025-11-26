@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { Permit2Mock } from "../mocks/Permit2Mock.sol";
+import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
 
 contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
 
@@ -18,10 +19,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
     function test_ExecuteBatchTracksTransferFrom() public {
         // Create permission with transferFrom
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transferFrom.selector
-        });
+        calls[0] =
+            JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transferFrom.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -67,21 +66,17 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         manager.executeBatch(permission, executeCalls);
 
         assertEq(erc20.balanceOf(randomUser), balanceBefore + 50 ether);
-        
+
         // Period should track the transferFrom amount
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 50 ether);
     }
 
     function test_ExecuteBatchSkipsSelfToSelfTransferFrom() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transferFrom.selector
-        });
+        calls[0] =
+            JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transferFrom.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -122,21 +117,17 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
 
         // Balance should be unchanged (self-transfer)
         assertEq(erc20.balanceOf(account), balanceBefore);
-        
+
         // Period should not have any spend recorded
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 0);
     }
 
     function test_ExecuteBatchSkipsZeroAmountTransferFrom() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transferFrom.selector
-        });
+        calls[0] =
+            JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transferFrom.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -173,10 +164,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         manager.executeBatch(permission, executeCalls);
 
         // Period should not have any spend recorded
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 0);
     }
 
@@ -184,10 +173,7 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // This test verifies that transferFrom is only tracked when account is the sender
         // Create permission with ANY_TARGET to allow calling any token
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: ANY_TARGET,
-            selector: IERC20.transferFrom.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: ANY_TARGET, selector: IERC20.transferFrom.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -227,10 +213,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         manager.executeBatch(permission, executeCalls);
 
         // Period should not have any spend recorded (account was not the sender)
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 0);
     }
 
@@ -245,12 +229,9 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // to execute through the account. However, looking at the code, it seems the contract
         // expects the manager to be able to call approve directly. This test verifies the tracking
         // works even if revocation fails (which would be a contract bug, but we test the tracking).
-        
+
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.approve.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.approve.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -285,24 +266,19 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // Execute the approval - it should succeed and the approval should be revoked after
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
-        
+
         // Approval should be revoked after execution
         assertEq(erc20.allowance(account, approvedSpender), 0);
-        
+
         // Period should track the approval amount
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 50 ether);
     }
 
     function test_ExecuteBatchSkipsZeroAmountApproval() public {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.approve.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.approve.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -338,20 +314,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         manager.executeBatch(permission, executeCalls);
 
         // Period should not have any spend recorded
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 0);
     }
 
     function test_ExecuteBatchTracksMultipleApprovals() public {
         // Similar to single approval test - expects revocation to fail
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.approve.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.approve.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -392,16 +363,14 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // Execute - approvals should be revoked after
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
-        
+
         // Both approvals should be revoked
         assertEq(erc20.allowance(account, spender1), 0);
         assertEq(erc20.allowance(account, spender2), 0);
-        
+
         // Period should track the total approval amount (30 + 20 = 50 ether)
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(period.spend, 50 ether);
     }
 
@@ -415,10 +384,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         feeToken.mint(account, 1000 ether);
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(feeToken),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] =
+            JustaPermissionManager.CallPermission({ target: address(feeToken), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -466,10 +433,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // So balance delta = 50 ether (the full amount we tried to send, but fee was deducted from recipient)
         // Actually no: if we call transfer(50 ether), the account loses 50 ether, recipient gets 49.5 ether
         // So balance delta = 50 ether, calldata = 50 ether, max = 50 ether
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         // The period should track the maximum of calldata amount and balance delta
         // Calldata amount: 50 ether
         // Balance delta: account loses 50 ether (49.5 to recipient + 0.5 fee burned)
@@ -486,13 +451,13 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // In a real scenario, PERMIT2 would be the actual Permit2 contract address.
         // For testing purposes, we use the PERMIT2 constant from the contract.
         address permit2Address = manager.PERMIT2();
-        
+
         // Use PERMIT2 as the target
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
         calls[0] = JustaPermissionManager.CallPermission({
             target: permit2Address,
             selector: bytes4(0x87517c45) // Permit2 approve selector
-        });
+         });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -538,12 +503,10 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // The important part is that the tracking logic would work if Permit2 existed
         try vm.prank(spender) {
             manager.executeBatch(permission, executeCalls);
-            
+
             // If execution succeeds, period should track the Permit2 approval amount
-            JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-                permission,
-                permission.spends[0]
-            );
+            JustaPermissionManager.PeriodSpend memory period =
+                manager.getLastUpdatedPeriod(permission, permission.spends[0]);
             // Note: This might fail if Permit2 execution affects spending differently
             // But the tracking should record the approval amount
             assertEq(period.spend, uint256(amount));
@@ -561,7 +524,7 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         calls[0] = JustaPermissionManager.CallPermission({
             target: address(erc20), // Not Permit2
             selector: bytes4(0x87517c45) // Permit2 approve selector
-        });
+         });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -584,7 +547,7 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         manager.approve(permission);
 
         address permit2Address = manager.PERMIT2();
-        
+
         // Try to call Permit2 approve on non-Permit2 target
         // This should be skipped (not tracked) because target != PERMIT2 (contract checks line 567)
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
@@ -592,11 +555,7 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
             target: address(erc20), // Not Permit2 (not equal to permit2Address)
             value: 0,
             data: abi.encodeWithSelector(
-                bytes4(0x87517c45),
-                address(erc20),
-                makeAddr("spender"),
-                uint160(50 ether),
-                uint48(block.timestamp + 1 days)
+                bytes4(0x87517c45), address(erc20), makeAddr("spender"), uint160(50 ether), uint48(block.timestamp + 1 days)
             )
         });
 
@@ -606,13 +565,11 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         vm.expectRevert(); // Expect revert from erc20 not having the function
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
-        
+
         // Even if execution fails, we can verify the tracking was skipped
         // because the period would not have been updated if tracking happened
-        JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         // Period start should be 0 (not updated) if tracking was skipped
         assertEq(period.start, 0);
         assertEq(period.spend, 0);
@@ -621,12 +578,9 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
     function test_ExecuteBatchSkipsZeroAmountPermit2Approval() public {
         // This test verifies that zero-amount Permit2 approvals are skipped (line 568)
         address permit2Address = manager.PERMIT2();
-        
+
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: permit2Address,
-            selector: bytes4(0x87517c45)
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: permit2Address, selector: bytes4(0x87517c45) });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -665,28 +619,26 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         // May revert if Permit2 not deployed, but tracking should be skipped before that
         try vm.prank(spender) {
             manager.executeBatch(permission, executeCalls);
-            
+
             // Period should not have any spend recorded (zero amount was skipped)
-            JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-                permission,
-                permission.spends[0]
-            );
+            JustaPermissionManager.PeriodSpend memory period =
+                manager.getLastUpdatedPeriod(permission, permission.spends[0]);
             assertEq(period.spend, 0);
         } catch {
             // If Permit2 not deployed, tracking was still skipped before revert
             // Verify period not updated
-            JustaPermissionManager.PeriodSpend memory period = manager.getLastUpdatedPeriod(
-                permission,
-                permission.spends[0]
-            );
+            JustaPermissionManager.PeriodSpend memory period =
+                manager.getLastUpdatedPeriod(permission, permission.spends[0]);
             assertEq(period.start, 0);
         }
     }
+
 }
 
 // Mock token that deducts fee from sender (like a tax token)
 contract TokenWithFee is ERC20Mock {
-    constructor() ERC20Mock() {}
+
+    constructor() ERC20Mock() { }
 
     function transfer(address to, uint256 amount) public override returns (bool) {
         uint256 fee = amount / 100; // 1% fee
@@ -707,5 +659,5 @@ contract TokenWithFee is ERC20Mock {
         _burn(from, fee);
         return true;
     }
-}
 
+}

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
 import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
@@ -61,10 +61,7 @@ contract TestViewFunctions is JustaPermissionManagerTestBase {
         JustaPermissionManager.Permission memory permission1 = _createBasicPermission();
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({
-            target: address(erc20),
-            selector: IERC20.transfer.selector
-        });
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
@@ -93,10 +90,8 @@ contract TestViewFunctions is JustaPermissionManagerTestBase {
         manager.approve(permission);
 
         // Before any spending
-        JustaPermissionManager.PeriodSpend memory periodBefore = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory periodBefore =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         assertEq(periodBefore.start, 0);
         assertEq(periodBefore.end, 0);
         assertEq(periodBefore.spend, 0);
@@ -113,10 +108,8 @@ contract TestViewFunctions is JustaPermissionManagerTestBase {
         manager.executeBatch(permission, calls);
 
         // After spending
-        JustaPermissionManager.PeriodSpend memory periodAfter = manager.getLastUpdatedPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory periodAfter =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
         // Spend tracking stores the actual spent amount
         assertTrue(periodAfter.spend > 0);
         assertTrue(periodAfter.start > 0);
@@ -129,16 +122,12 @@ contract TestViewFunctions is JustaPermissionManagerTestBase {
         vm.prank(account);
         manager.approve(permission);
 
-        JustaPermissionManager.PeriodSpend memory currentPeriod = manager.getCurrentPeriod(
-            permission,
-            permission.spends[0]
-        );
+        JustaPermissionManager.PeriodSpend memory currentPeriod =
+            manager.getCurrentPeriod(permission, permission.spends[0]);
 
         assertTrue(currentPeriod.start <= block.timestamp);
         assertTrue(currentPeriod.end > block.timestamp);
         assertEq(currentPeriod.spend, 0);
     }
+
 }
-
-
-
