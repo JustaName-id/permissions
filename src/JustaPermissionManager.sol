@@ -242,14 +242,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         DynamicArrayLib.DynamicArray permit2Spenders;
     }
 
-    /**
-     * @notice Permit2 TokenSpenderPair for lockdown.
-     */
-    struct TokenSpenderPair {
-        address token;
-        address spender;
-    }
-
     ////////////////////////////////////////////////////////////////////////
     // CONSTANTS
     ////////////////////////////////////////////////////////////////////////
@@ -674,10 +666,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (permit2Length > 0) {
             // Permit2.lockdown takes an array of (address token, address spender) tuples
             // The function signature is: lockdown((address,address)[])
-            TokenSpenderPair[] memory approvals = new TokenSpenderPair[](permit2Length);
+            IAllowanceTransfer.TokenSpenderPair[] memory approvals = new IAllowanceTransfer.TokenSpenderPair[](permit2Length);
             for (uint256 i; i < permit2Length; ++i) {
                 approvals[i] =
-                    TokenSpenderPair({ token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i) });
+                    IAllowanceTransfer.TokenSpenderPair({ token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i) });
             }
 
             BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
