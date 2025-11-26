@@ -237,6 +237,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         DynamicArrayLib.DynamicArray permit2Spenders;
     }
 
+    /**
+     * @notice Permit2 TokenSpenderPair for lockdown.
+     */
+    struct TokenSpenderPair {
+        address token;
+        address spender;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // CONSTANTS
     ////////////////////////////////////////////////////////////////////////
@@ -589,7 +597,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
         // ============================================================
-        _executeBatch(permission.account, calls);
+        // Copy calldata to memory for consistency with _executeBatch
+        BaseAccount.Call[] memory callsMemory = new BaseAccount.Call[](calls.length);
+        for (uint256 i; i < calls.length; ++i) {
+            callsMemory[i] = calls[i];
+        }
+        _executeBatch(permission.account, callsMemory);
 
         emit CallsExecuted(hash);
 
@@ -622,7 +635,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                     )
                 });
             }
-            JustanAccount(payable(permission.account)).executeBatch(revokeCalls);
+            _executeBatch(permission.account, revokeCalls);
             
             // Verify all approvals were revoked
             for (uint256 i; i < approvedLength; ++i) {
@@ -642,30 +655,21 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // Permit2.lockdown takes an array of (address token, address spender) tuples
             // The function signature is: lockdown((address,address)[])
             // Selector: 0xcc53287f
-            bytes memory approvalsData = new bytes(32 + permit2Length * 64); // offset + array length + tuples
-            // Store offset (0x20) at position 0
-            assembly {
-                mstore(add(approvalsData, 0x20), 0x20)
-                mstore(add(approvalsData, 0x40), permit2Length)
-            }
-            // Store each (token, spender) tuple
+            TokenSpenderPair[] memory approvals = new TokenSpenderPair[](permit2Length);
             for (uint256 i; i < permit2Length; ++i) {
-                address token = t.permit2ERC20s.getAddress(i);
-                address spender = t.permit2Spenders.getAddress(i);
-                assembly {
-                    let offset := add(add(approvalsData, 0x40), mul(i, 0x40))
-                    mstore(add(offset, 0x20), shl(96, token))
-                    mstore(add(offset, 0x40), shl(96, spender))
-                }
+                approvals[i] = TokenSpenderPair({
+                    token: t.permit2ERC20s.getAddress(i),
+                    spender: t.permit2Spenders.getAddress(i)
+                });
             }
             
             BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
             permit2RevokeCalls[0] = BaseAccount.Call({
                 target: PERMIT2,
                 value: 0,
-                data: abi.encodePacked(bytes4(0xcc53287f), approvalsData)
+                data: abi.encodeWithSelector(bytes4(0xcc53287f), approvals)
             });
-            JustanAccount(payable(permission.account)).executeBatch(permit2RevokeCalls);
+            _executeBatch(permission.account, permit2RevokeCalls);
         }
 
         // Increments the spent amounts.
@@ -1013,7 +1017,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.period));
     }
 
-    function _executeBatch(address account, BaseAccount.Call[] calldata calls) internal {
+    function _executeBatch(address account, BaseAccount.Call[] memory calls) internal {
         JustanAccount(payable(account)).executeBatch(calls);
     }
 
