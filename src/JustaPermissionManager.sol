@@ -299,7 +299,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     event SpendLimitUsed(bytes32 indexed permissionHash, address indexed token, PeriodSpend periodSpend);
 
     ////////////////////////////////////////////////////////////////////////
-    // MODIFIERSit 
+    // MODIFIERS
     ////////////////////////////////////////////////////////////////////////
 
     modifier requireSender(address sender) {
@@ -640,7 +640,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         uint256 permit2Length = t.permit2ERC20s.length();
         if (permit2Length > 0) {
             // Permit2.lockdown takes an array of (address token, address spender) tuples
-            // We'll construct one call with all approvals to revoke
             // The function signature is: lockdown((address,address)[])
             // Selector: 0xcc53287f
             bytes memory approvalsData = new bytes(32 + permit2Length * 64); // offset + array length + tuples
@@ -666,7 +665,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 value: 0,
                 data: abi.encodePacked(bytes4(0xcc53287f), approvalsData)
             });
-           JustanAccount(payable(permission.account)).executeBatch(permit2RevokeCalls);
+            JustanAccount(payable(permission.account)).executeBatch(permit2RevokeCalls);
         }
 
         // Increments the spent amounts.
