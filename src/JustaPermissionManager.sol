@@ -7,17 +7,21 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
+import { JustanAccount } from "justanaccount/JustanAccount.sol";
 
+import { DateTimeLib } from "solady/utils/DateTimeLib.sol";
+import { DynamicArrayLib } from "solady/utils/DynamicArrayLib.sol";
 import { EIP712 } from "solady/utils/EIP712.sol";
-import { ReentrancyGuard } from "solady/utils/ReentrancyGuard.sol";
+
+import { FixedPointMathLib as Math } from "solady/utils/FixedPointMathLib.sol";
 import { LibBytes } from "solady/utils/LibBytes.sol";
 import { LibSort } from "solady/utils/LibSort.sol";
-import { DynamicArrayLib } from "solady/utils/DynamicArrayLib.sol";
+import { ReentrancyGuard } from "solady/utils/ReentrancyGuard.sol";
+
 import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
-import { FixedPointMathLib as Math } from "solady/utils/FixedPointMathLib.sol";
-import { DateTimeLib } from "solady/utils/DateTimeLib.sol";
+
+import { IAllowanceTransfer } from "@permit2/src/interfaces/IAllowanceTransfer.sol";
 
 /**
  * @title JustaPermissionManager
@@ -173,13 +177,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @dev Using fixed periods eliminates modulo arithmetic edge cases.
      */
     enum SpendPeriod {
-        Minute,     // 60 seconds
-        Hour,       // 3600 seconds
-        Day,        // 86400 seconds
-        Week,       // 604800 seconds
-        Month,      // 2592000 seconds (30 days)
-        Year,       // 31536000 seconds (365 days)
-        Forever     // type(uint48).max, one-time allowance for entire permission duration
+        Minute, // 60 seconds
+        Hour, // 3600 seconds
+        Day, // 86400 seconds
+        Week, // 604800 seconds
+        Month, // 2592000 seconds (30 days)
+        Year, // 31536000 seconds (365 days)
+        Forever // type(uint48).max, one-time allowance for entire permission duration
+
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -237,6 +242,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         DynamicArrayLib.DynamicArray permit2Spenders;
     }
 
+    /**
+     * @notice Permit2 TokenSpenderPair for lockdown.
+     */
+    struct TokenSpenderPair {
+        address token;
+        address spender;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // CONSTANTS
     ////////////////////////////////////////////////////////////////////////
@@ -263,8 +276,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     bytes32 public constant CALL_PERMISSION_TYPEHASH = keccak256("CallPermission(address target,bytes4 selector)");
 
-    bytes32 public constant SPEND_LIMIT_TYPEHASH =
-        keccak256("SpendLimit(address token,uint160 allowance,uint8 period)");
+    bytes32 public constant SPEND_LIMIT_TYPEHASH = keccak256("SpendLimit(address token,uint160 allowance,uint8 period)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
         "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector)SpendLimit(address token,uint160 allowance,uint8 period)"
@@ -299,7 +311,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     event SpendLimitUsed(bytes32 indexed permissionHash, address indexed token, PeriodSpend periodSpend);
 
     ////////////////////////////////////////////////////////////////////////
-    // MODIFIERSit 
+    // MODIFIERS
     ////////////////////////////////////////////////////////////////////////
 
     modifier requireSender(address sender) {
@@ -357,7 +369,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             if (permission.calls[i].selector == bytes4(0)) {
                 revert JustaPermissionManager_ZeroSelector();
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // Validate spend limits
@@ -379,7 +393,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                     revert JustaPermissionManager_ERC1155TokenNotSupported(permission.spends[i].token);
                 }
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // Check for duplicate spend limits (same token + allowance + period)
@@ -389,14 +405,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             bytes32[] memory spendHashes = new bytes32[](spendsLength);
             for (uint256 i = 0; i < spendsLength;) {
                 spendHashes[i] = _hashSpendLimit(permission.spends[i]);
-                unchecked { ++i; }
+                unchecked {
+                    ++i;
+                }
             }
             LibSort.sort(spendHashes);
             for (uint256 i = 1; i < spendsLength;) {
                 if (spendHashes[i] == spendHashes[i - 1]) {
                     revert JustaPermissionManager_DuplicateSpendLimit(permission.spends[i].token);
                 }
-                unchecked { ++i; }
+                unchecked {
+                    ++i;
+                }
             }
         }
 
@@ -483,15 +503,16 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             }
 
             // Extract function selector (use EMPTY_CALLDATA_FN_SEL for empty calldata)
-            bytes4 selector = calls[i].data.length >= 4
-                ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00))
-                : EMPTY_CALLDATA_FN_SEL;
+            bytes4 selector =
+                calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
             // Check if this call is authorized
             if (!_isCallAuthorized(permission, calls[i].target, selector)) {
                 revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // ============================================================
@@ -509,7 +530,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 t.erc20s.p(token);
                 t.transferAmounts.p(uint256(0));
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // Parse calldata for token operations.
@@ -522,8 +545,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             uint256 value = calls[i].value;
             bytes calldata data = calls[i].data;
 
-            if (value != 0) totalNativeSpend += value;
-            if (data.length < 4) continue;
+            if (value != 0) {
+                totalNativeSpend += value;
+            }
+            if (data.length < 4) {
+                continue;
+            }
 
             uint32 fnSel = uint32(bytes4(LibBytes.loadCalldata(data, 0x00)));
 
@@ -540,8 +567,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
                 address to = LibBytes.loadCalldata(data, 0x24).lsbToAddress();
                 // Skip if this is a self-to-self transfer
-                if (from == permission.account && to == permission.account) continue;
-                if (LibBytes.loadCalldata(data, 0x44) == 0) continue; // `amount == 0`
+                if (from == permission.account && to == permission.account) {
+                    continue;
+                }
+                if (LibBytes.loadCalldata(data, 0x44) == 0) {
+                    continue;
+                } // `amount == 0`
                 // Only track if account is the sender
                 if (from == permission.account) {
                     t.erc20s.p(target);
@@ -553,7 +584,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // We have to revoke any new approvals after the batch, else a bad app can
             // leave an approval to let them drain unlimited tokens after the batch.
             if (fnSel == 0x095ea7b3) {
-                if (LibBytes.loadCalldata(data, 0x24) == 0) continue; // `amount == 0`
+                if (LibBytes.loadCalldata(data, 0x24) == 0) {
+                    continue;
+                } // `amount == 0`
                 t.approvedERC20s.p(target);
                 t.approvalSpenders.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `spender`
                 t.erc20s.p(target); // `token`
@@ -564,8 +597,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // For ERC20 tokens giving Permit2 infinite approvals by default,
             // the approve method on Permit2 acts like a approve method on the ERC20.
             if (fnSel == 0x87517c45) {
-                if (target != PERMIT2) continue;
-                if (LibBytes.loadCalldata(data, 0x44) == 0) continue; // `amount == 0`
+                if (target != PERMIT2) {
+                    continue;
+                }
+                if (LibBytes.loadCalldata(data, 0x44) == 0) {
+                    continue;
+                } // `amount == 0`
                 t.permit2ERC20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
                 t.permit2Spenders.p(LibBytes.loadCalldata(data, 0x24).lsbToAddress()); // `spender`
                 t.erc20s.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `token`
@@ -574,22 +611,21 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         }
 
         // Sum transfer amounts, grouped by the ERC20s. In-place.
-        // Only call groupSum if there are tokens to process
-        uint256 erc20sLength = t.erc20s.length();
-        if (erc20sLength > 0) {
+
+        if (t.erc20s.length() > 0) {
             LibSort.groupSum(t.erc20s.data, t.transferAmounts.data);
         }
 
         // Collect the ERC20 balances before the batch execution.
-        uint256[] memory balancesBefore = DynamicArrayLib.malloc(erc20sLength);
-        for (uint256 i; i < erc20sLength; ++i) {
+        uint256[] memory balancesBefore = DynamicArrayLib.malloc(t.erc20s.length());
+        for (uint256 i; i < t.erc20s.length(); ++i) {
             address token = t.erc20s.getAddress(i);
             balancesBefore.set(i, SafeTransferLib.balanceOf(token, permission.account));
         }
 
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
-        // ============================================================
+
         _executeBatch(permission.account, calls);
 
         emit CallsExecuted(hash);
@@ -607,27 +643,54 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         // Revoke all non-zero approvals that have been made.
         // As spend permissions are whitelist style, we need to make sure that
         // approvals are revoked. This is to prevent sidestepping the guard.
+        // Note: Approvals must be revoked through the account's executeBatch
+        // because msg.sender in ERC20.approve must be the account, not the manager.
         uint256 approvedLength = t.approvedERC20s.length();
-        for (uint256 i; i < approvedLength; ++i) {
-            address token = t.approvedERC20s.getAddress(i);
-            address spender = t.approvalSpenders.getAddress(i);
-            SafeTransferLib.safeApprove(token, spender, 0);
-            // Verify the approval was actually revoked
-            if (IERC20(token).allowance(permission.account, spender) != 0) {
-                revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
+        if (approvedLength > 0) {
+            BaseAccount.Call[] memory revokeCalls = new BaseAccount.Call[](approvedLength);
+            for (uint256 i; i < approvedLength; ++i) {
+                revokeCalls[i] = BaseAccount.Call({
+                    target: t.approvedERC20s.getAddress(i),
+                    value: 0,
+                    data: abi.encodeWithSelector(IERC20.approve.selector, t.approvalSpenders.getAddress(i), 0)
+                });
+            }
+            _executeBatch(permission.account, revokeCalls);
+
+            // Verify all approvals were revoked
+            for (uint256 i; i < approvedLength; ++i) {
+                address token = t.approvedERC20s.getAddress(i);
+                address spender = t.approvalSpenders.getAddress(i);
+                if (IERC20(token).allowance(permission.account, spender) != 0) {
+                    revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
+                }
             }
         }
 
         // Revoke all non-zero Permit2 direct approvals that have been made.
+        // Note: permit2Lockdown must be called from the account (owner) to revoke approvals
+        // that were set by the account. Execute through account's executeBatch.
         uint256 permit2Length = t.permit2ERC20s.length();
-        for (uint256 i; i < permit2Length; ++i) {
-            address token = t.permit2ERC20s.getAddress(i);
-            address spender = t.permit2Spenders.getAddress(i);
-            SafeTransferLib.permit2Lockdown(token, spender);
+        if (permit2Length > 0) {
+            // Permit2.lockdown takes an array of (address token, address spender) tuples
+            // The function signature is: lockdown((address,address)[])
+            TokenSpenderPair[] memory approvals = new TokenSpenderPair[](permit2Length);
+            for (uint256 i; i < permit2Length; ++i) {
+                approvals[i] =
+                    TokenSpenderPair({ token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i) });
+            }
+
+            BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
+            permit2RevokeCalls[0] = BaseAccount.Call({
+                target: PERMIT2,
+                value: 0,
+                data: abi.encodeWithSelector(IAllowanceTransfer.lockdown.selector, approvals)
+            });
+            _executeBatch(permission.account, permit2RevokeCalls);
         }
 
         // Increments the spent amounts.
-        for (uint256 i; i < erc20sLength; ++i) {
+        for (uint256 i; i < t.erc20s.length(); ++i) {
             address token = t.erc20s.getAddress(i);
 
             // While we can actually just use the difference before and after,
@@ -638,10 +701,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // and we want to be as conservative as possible.
             uint256 spentAmount = Math.max(
                 t.transferAmounts.get(i),
-                Math.saturatingSub(
-                    balancesBefore.get(i),
-                    SafeTransferLib.balanceOf(token, permission.account)
-                )
+                Math.saturatingSub(balancesBefore.get(i), SafeTransferLib.balanceOf(token, permission.account))
             );
 
             if (spentAmount > 0) {
@@ -693,14 +753,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         bytes32[] memory callHashes = new bytes32[](callsLength);
         for (uint256 i = 0; i < callsLength;) {
             callHashes[i] = _hashCallPermission(permission.calls[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         uint256 spendsLength = permission.spends.length;
         bytes32[] memory spendHashes = new bytes32[](spendsLength);
         for (uint256 i = 0; i < spendsLength;) {
             spendHashes[i] = _hashSpendLimit(permission.spends[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         return _hashTypedData(
@@ -732,11 +796,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      *      - Year: Aligns to Jan 1st
      *      - Forever: Returns 1 (non-zero to differentiate from unset)
      */
-    function startOfSpendPeriod(uint256 unixTimestamp, SpendPeriod period)
-        public
-        pure
-        returns (uint256)
-    {
+    function startOfSpendPeriod(uint256 unixTimestamp, SpendPeriod period) public pure returns (uint256) {
         if (period == SpendPeriod.Forever) {
             return 1; // Non-zero to differentiate from not set.
         }
@@ -747,7 +807,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             return Math.rawMul(Math.rawDiv(unixTimestamp, 3600), 3600);
         }
         if (period == SpendPeriod.Day) {
-            return Math.rawMul(Math.rawDiv(unixTimestamp, 86400), 86400);
+            return Math.rawMul(Math.rawDiv(unixTimestamp, 86_400), 86_400);
         }
         if (period == SpendPeriod.Week) {
             return DateTimeLib.mondayTimestamp(unixTimestamp);
@@ -767,10 +827,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @notice Get the duration of a spend period in seconds.
      */
     function _periodDuration(SpendPeriod period, uint256 periodStart) internal pure returns (uint48) {
-        if (period == SpendPeriod.Minute) return 60;
-        if (period == SpendPeriod.Hour) return 3600;
-        if (period == SpendPeriod.Day) return 86400;
-        if (period == SpendPeriod.Week) return 604800;
+        if (period == SpendPeriod.Minute) {
+            return 60;
+        }
+        if (period == SpendPeriod.Hour) {
+            return 3600;
+        }
+        if (period == SpendPeriod.Day) {
+            return 86_400;
+        }
+        if (period == SpendPeriod.Week) {
+            return 604_800;
+        }
 
         // For Month and Year, calculate actual duration from the period start
         if (period == SpendPeriod.Month) {
@@ -814,12 +882,13 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             if (targetMatch && selectorMatch) {
                 return true;
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         return false;
     }
-
 
     function _checkAndIncrementSpend(
         bytes32 hash,
@@ -829,7 +898,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     )
         internal
     {
-        if (amount == 0) return;
+        if (amount == 0) {
+            return;
+        }
 
         // Check ALL spend limits for this token (supports multiple periods per token)
         bool found = false;
@@ -838,17 +909,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             if (permission.spends[i].token == token) {
                 found = true;
                 bytes32 spendLimitHash = _hashSpendLimit(permission.spends[i]);
-                _useSpendLimit(
-                    hash,
-                    spendLimitHash,
-                    permission.spends[i],
-                    amount,
-                    permission.start,
-                    permission.end
-                );
+                _useSpendLimit(hash, spendLimitHash, permission.spends[i], amount, permission.start, permission.end);
                 // Don't break - continue checking all limits for this token
             }
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
 
         // If token has no spend limit configured, revert
@@ -971,7 +1037,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.period));
     }
 
-    function _executeBatch(address account, BaseAccount.Call[] calldata calls) internal {
+    function _executeBatch(address account, BaseAccount.Call[] memory calls) internal {
         JustanAccount(payable(account)).executeBatch(calls);
     }
 
@@ -979,4 +1045,5 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         name = "JustaPermissionManager";
         version = "1";
     }
+
 }

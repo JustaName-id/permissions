@@ -21,6 +21,8 @@ build:; forge build
 
 test :; forge test
 
+coverage :; forge coverage --ir-minimum
+
 snapshot :; forge snapshot
 
 format :; forge fmt

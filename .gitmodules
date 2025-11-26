@@ -17,3 +17,6 @@
 [submodule "lib/justanaccount"]
 	path = lib/justanaccount
 	url = https://github.com/JustaName-id/justanaccount
+[submodule "lib/permit2"]
+	path = lib/permit2
+	url = https://github.com/uniswap/permit2
