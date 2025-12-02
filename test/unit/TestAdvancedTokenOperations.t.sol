@@ -26,14 +26,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 3 // 3-hour limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 2 days),
             salt: 100,
             calls: calls,
             spends: spends
@@ -82,7 +83,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -133,7 +135,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -179,7 +182,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -237,14 +241,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 2 // 2-day limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 5 days),
             salt: 104,
             calls: calls,
             spends: spends
@@ -284,7 +289,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -328,14 +334,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 12 // 12-hour limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 3 days),
             salt: 106,
             calls: calls,
             spends: spends
@@ -391,14 +398,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(feeToken),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Week,
+            multiplier: 2 // 2-week limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 30 days),
             salt: 107,
             calls: calls,
             spends: spends
@@ -463,14 +471,15 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Month,
+            multiplier: 3 // Quarterly (3 months)
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 365 days),
             salt: 108,
             calls: calls,
             spends: spends
@@ -530,7 +539,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -586,7 +596,8 @@ contract TestAdvancedTokenOperations is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({

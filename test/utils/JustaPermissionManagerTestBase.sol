@@ -99,18 +99,20 @@ abstract contract JustaPermissionManagerTestBase is Test {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
         calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
 
+        // Use 2-day period to test multiplier
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 2
         });
 
         return JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 7 days),
             salt: 1,
             calls: calls,
             spends: spends
@@ -121,18 +123,20 @@ abstract contract JustaPermissionManagerTestBase is Test {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
         calls[0] = JustaPermissionManager.CallPermission({ target: randomUser, selector: EMPTY_CALLDATA_FN_SEL });
 
+        // Use 4-hour period for native token
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
             token: NATIVE_TOKEN,
             allowance: 1 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 4
         });
 
         return JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 2 days),
             salt: 2,
             calls: calls,
             spends: spends
@@ -160,18 +164,20 @@ abstract contract JustaPermissionManagerTestBase is Test {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
         calls[0] = JustaPermissionManager.CallPermission({ target: ANY_TARGET, selector: ANY_FN_SEL });
 
+        // Use 3-hour period for wildcard
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 3
         });
 
         return JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 2 days),
             salt: 4,
             calls: calls,
             spends: spends

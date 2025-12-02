@@ -26,7 +26,8 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: maxAllowance,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Week,
+            multiplier: 2 // 2-week limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -89,7 +90,8 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Month
+            unit: JustaPermissionManager.PeriodUnit.Month,
+            multiplier: 6 // 6-month (semi-annual) limit
         });
 
         // Set start time near uint48 max to cause overflow when calculating period end
@@ -135,7 +137,8 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(maliciousToken),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 8 // 8-hour limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -171,6 +174,55 @@ contract TestErrorCases is JustaPermissionManagerTestBase {
         );
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_GetCurrentPeriodRevertsOnHourUnitOverflow() public {
+        // Test period overflow with Hour unit when permission starts mid-period
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = JustaPermissionManager.SpendLimit({
+            token: address(erc20),
+            allowance: 100 ether,
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 255 // 255 hours per period = 918000 seconds
+        });
+
+        // Find a permissionStart where:
+        // 1. It's mid-period (not aligned to 918000-second boundary)
+        // 2. nextBoundary = ((permissionStart / 918000) + 1) * 918000 > uint48.max
+        // uint48.max = 281474976710655
+        // Period index that causes overflow: floor(uint48.max / 918000) + 1 = 306617601
+        // Last safe period start: 306617600 * 918000 = 281,478,956,800,000 (> uint48.max, so overflow)
+        // Actually: 306617600 * 918000 = 281,478,956,800,000
+        // Let's verify: 281474976710655 / 918000 = 306,617,600.xxx
+        // So index 306617600 gives: 306617600 * 918000 = 281,478,956,800,000 > 281,474,976,710,655
+        // Previous index: 306617599 * 918000 = 281,478,038,800,000 > uint48.max still!
+        // Keep going back: 306612675 * 918000 = 281,474,515,650,000 < uint48.max
+        // So permissionStart should be in period 306612675, making next boundary = 306612676 * 918000
+
+        // Actually let me just use a practical timestamp near uint48.max
+        // Set permissionStart = uint48.max - 500000 (mid-period for a 918000-second period)
+        uint48 permissionStart = type(uint48).max - 500_000;
+
+        JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
+            account: account,
+            spender: spender,
+            start: permissionStart,
+            end: type(uint48).max,
+            salt: 204,
+            calls: calls,
+            spends: spends
+        });
+
+        vm.prank(account);
+        manager.approve(permission);
+
+        vm.warp(permissionStart);
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_PeriodOverflow.selector);
+        manager.getCurrentPeriod(permission, permission.spends[0]);
     }
 
 }

@@ -47,7 +47,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -75,12 +76,14 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 2 // 2-day limit
         });
         spends[1] = JustaPermissionManager.SpendLimit({
             token: address(erc20Two),
             allowance: 50 ether,
-            period: JustaPermissionManager.SpendPeriod.Hour
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 4 // 4-hour limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -113,7 +116,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -166,12 +170,14 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 10 ether,
-            period: JustaPermissionManager.SpendPeriod.Hour
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 2 // 2-hour limit
         });
         spends[1] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 3 // 3-day limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -212,7 +218,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -238,7 +245,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         // Start >= End
@@ -271,7 +279,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         uint48 sameTime = uint48(block.timestamp);
@@ -301,7 +310,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -330,7 +340,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -359,7 +370,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -385,7 +397,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(0), // Zero token
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -411,7 +424,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 0, // Zero allowance
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -440,7 +454,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc721), // ERC721 token
             allowance: 1,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -473,7 +488,8 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc1155), // ERC1155 token
             allowance: 1,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -504,12 +520,14 @@ contract TestApprove is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
         spends[1] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -592,6 +610,33 @@ contract TestApprove is JustaPermissionManagerTestBase {
 
         // Try to approve again - should fail
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
+        vm.prank(account);
+        manager.approve(permission);
+    }
+
+    function test_ApproveRevertsOnZeroMultiplier() public {
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = JustaPermissionManager.CallPermission({ target: address(erc20), selector: IERC20.transfer.selector });
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = JustaPermissionManager.SpendLimit({
+            token: address(erc20),
+            allowance: 100 ether,
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 0 // Zero multiplier - should revert
+        });
+
+        JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
+            account: account,
+            spender: spender,
+            start: uint48(block.timestamp),
+            end: uint48(block.timestamp + 1 days),
+            salt: 33,
+            calls: calls,
+            spends: spends
+        });
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_ZeroMultiplier.selector);
         vm.prank(account);
         manager.approve(permission);
     }
