@@ -168,23 +168,27 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     error JustaPermissionManager_ApprovalRevocationFailed(address token, address spender);
 
+    /**
+     * @notice Thrown when the multiplier in a spend limit is zero (causes zero-duration periods).
+     */
+    error JustaPermissionManager_ZeroMultiplier();
+
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
     ////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Standardized spend periods to prevent period calculation gaming.
-     * @dev Using fixed periods eliminates modulo arithmetic edge cases.
+     * @notice Period units for flexible period configuration.
+     * @dev Multiplier is applied to all units except Forever.
      */
-    enum SpendPeriod {
+    enum PeriodUnit {
         Minute, // 60 seconds
         Hour, // 3600 seconds
         Day, // 86400 seconds
-        Week, // 604800 seconds
-        Month, // 2592000 seconds (30 days)
-        Year, // 31536000 seconds (365 days)
+        Week, // 604800 seconds (calendar-aligned to Monday)
+        Month, // Calendar-aligned to 1st of month
+        Year, // Calendar-aligned to Jan 1st
         Forever // type(uint48).max, one-time allowance for entire permission duration
-
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -205,7 +209,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     struct SpendLimit {
         address token;
         uint160 allowance;
-        SpendPeriod period;
+        PeriodUnit unit;
+        uint8 multiplier; // 1-255, ignored for Forever only
     }
 
     /**
@@ -268,10 +273,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     bytes32 public constant CALL_PERMISSION_TYPEHASH = keccak256("CallPermission(address target,bytes4 selector)");
 
-    bytes32 public constant SPEND_LIMIT_TYPEHASH = keccak256("SpendLimit(address token,uint160 allowance,uint8 period)");
+    bytes32 public constant SPEND_LIMIT_TYPEHASH = keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
-        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector)SpendLimit(address token,uint160 allowance,uint8 period)"
+        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
     );
 
     ////////////////////////////////////////////////////////////////////////
@@ -374,6 +379,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             }
             if (permission.spends[i].allowance == 0) {
                 revert JustaPermissionManager_ZeroAllowance();
+            }
+            // Revert if multiplier is zero (causes zero-duration periods)
+            if (permission.spends[i].multiplier == 0) {
+                revert JustaPermissionManager_ZeroMultiplier();
             }
 
             // Check token is not an ERC-721 or ERC-1155
@@ -782,68 +791,107 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     /**
      * @notice Rounds the unix timestamp down to the period start.
      * @dev Aligns periods to calendar boundaries to prevent gaming.
-     *      - Minute/Hour/Day: Rounds down using division
-     *      - Week: Aligns to Monday
-     *      - Month: Aligns to 1st of month
-     *      - Year: Aligns to Jan 1st
-     *      - Forever: Returns 1 (non-zero to differentiate from unset)
+     *      - Minute/Hour/Day: Rounds down to base unit boundary, then applies multiplier
+     *      - Week: Aligns to Monday, then groups N weeks together
+     *      - Month: Aligns to 1st of month, then groups N months together
+     *      - Year: Aligns to Jan 1st, then groups N years together
+     *      - Forever: Returns 1 (non-zero to differentiate from unset, multiplier ignored)
      */
-    function startOfSpendPeriod(uint256 unixTimestamp, SpendPeriod period) public pure returns (uint256) {
-        if (period == SpendPeriod.Forever) {
+    function startOfSpendPeriod(uint256 unixTimestamp, PeriodUnit unit, uint8 multiplier) public pure returns (uint256) {
+        if (unit == PeriodUnit.Forever) {
             return 1; // Non-zero to differentiate from not set.
         }
-        if (period == SpendPeriod.Minute) {
-            return Math.rawMul(Math.rawDiv(unixTimestamp, 60), 60);
+        if (unit == PeriodUnit.Minute) {
+            // Align to minute boundary, then find the correct multiplier window
+            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 60), 60);
+            uint256 periodDuration = 60 * uint256(multiplier);
+            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
         }
-        if (period == SpendPeriod.Hour) {
-            return Math.rawMul(Math.rawDiv(unixTimestamp, 3600), 3600);
+        if (unit == PeriodUnit.Hour) {
+            // Align to hour boundary, then find the correct multiplier window
+            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 3600), 3600);
+            uint256 periodDuration = 3600 * uint256(multiplier);
+            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
         }
-        if (period == SpendPeriod.Day) {
-            return Math.rawMul(Math.rawDiv(unixTimestamp, 86_400), 86_400);
+        if (unit == PeriodUnit.Day) {
+            // Align to day boundary, then find the correct multiplier window
+            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 86_400), 86_400);
+            uint256 periodDuration = 86_400 * uint256(multiplier);
+            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
         }
-        if (period == SpendPeriod.Week) {
-            return DateTimeLib.mondayTimestamp(unixTimestamp);
+        if (unit == PeriodUnit.Week) {
+            // Align to Monday, then group N weeks together
+            uint256 monday = DateTimeLib.mondayTimestamp(unixTimestamp);
+            // Calculate weeks since epoch (Jan 1, 1970 was a Thursday, so first Monday is Jan 5, 1970)
+            // Reference Monday: Jan 5, 1970 00:00:00 UTC = 86400 * 4 = 345600
+            uint256 referenceMonday = 345600;
+            if (monday < referenceMonday) {
+                return monday; // Before reference, return as-is
+            }
+            uint256 weeksSinceRef = (monday - referenceMonday) / 604_800;
+            uint256 periodIndex = weeksSinceRef / uint256(multiplier);
+            return referenceMonday + (periodIndex * uint256(multiplier) * 604_800);
         }
         (uint256 year, uint256 month,) = DateTimeLib.timestampToDate(unixTimestamp);
         // Note: DateTimeLib's months and month-days start from 1.
-        if (period == SpendPeriod.Month) {
-            return DateTimeLib.dateToTimestamp(year, month, 1);
+        if (unit == PeriodUnit.Month) {
+            // Align to 1st of month, then group N months together
+            // Calculate months since epoch (Jan 1970 = month 0)
+            uint256 monthsSinceEpoch = (year - 1970) * 12 + (month - 1);
+            uint256 periodIndex = monthsSinceEpoch / uint256(multiplier);
+            uint256 totalMonths = periodIndex * uint256(multiplier);
+            uint256 startYear = 1970 + totalMonths / 12;
+            uint256 startMonth = (totalMonths % 12) + 1; // +1 because DateTimeLib months are 1-indexed
+            return DateTimeLib.dateToTimestamp(startYear, startMonth, 1);
         }
-        if (period == SpendPeriod.Year) {
-            return DateTimeLib.dateToTimestamp(year, 1, 1);
+        if (unit == PeriodUnit.Year) {
+            // Align to Jan 1st, then group N years together
+            // Calculate years since epoch
+            uint256 yearsSinceEpoch = year - 1970;
+            uint256 periodIndex = yearsSinceEpoch / uint256(multiplier);
+            uint256 startYear = 1970 + (periodIndex * uint256(multiplier));
+            return DateTimeLib.dateToTimestamp(startYear, 1, 1);
         }
         revert(); // We shouldn't hit here.
     }
 
     /**
      * @notice Get the duration of a spend period in seconds.
+     * @dev For fixed units (Minute, Hour, Day), returns baseDuration * multiplier.
+     *      For calendar units (Week, Month, Year), calculates duration for N units.
      */
-    function _periodDuration(SpendPeriod period, uint256 periodStart) internal pure returns (uint48) {
-        if (period == SpendPeriod.Minute) {
-            return 60;
+    function _periodDuration(PeriodUnit unit, uint8 multiplier, uint256 periodStart) internal pure returns (uint48) {
+        if (unit == PeriodUnit.Minute) {
+            return 60 * uint48(multiplier);
         }
-        if (period == SpendPeriod.Hour) {
-            return 3600;
+        if (unit == PeriodUnit.Hour) {
+            return 3600 * uint48(multiplier);
         }
-        if (period == SpendPeriod.Day) {
-            return 86_400;
+        if (unit == PeriodUnit.Day) {
+            return 86_400 * uint48(multiplier);
         }
-        if (period == SpendPeriod.Week) {
-            return 604_800;
+        if (unit == PeriodUnit.Week) {
+            // Duration is N weeks
+            return 604_800 * uint48(multiplier);
         }
 
-        // For Month and Year, calculate actual duration from the period start
-        if (period == SpendPeriod.Month) {
+        // For Month and Year, calculate actual duration for N units
+        if (unit == PeriodUnit.Month) {
             (uint256 year, uint256 month,) = DateTimeLib.timestampToDate(periodStart);
-            uint256 nextMonth = month == 12 ? 1 : month + 1;
-            uint256 nextYear = month == 12 ? year + 1 : year;
-            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(nextYear, nextMonth, 1);
+            // Add N months to get the next period start
+            uint256 targetMonth = month + uint256(multiplier);
+            uint256 targetYear = year;
+            while (targetMonth > 12) {
+                targetMonth -= 12;
+                targetYear += 1;
+            }
+            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(targetYear, targetMonth, 1);
             return uint48(nextPeriodStart - periodStart);
         }
 
-        if (period == SpendPeriod.Year) {
+        if (unit == PeriodUnit.Year) {
             (uint256 year,,) = DateTimeLib.timestampToDate(periodStart);
-            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(year + 1, 1, 1);
+            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(year + uint256(multiplier), 1, 1);
             return uint48(nextPeriodStart - periodStart);
         }
 
@@ -982,30 +1030,72 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             return lastUpdatedPeriod;
         }
 
-        // Use startOfSpendPeriod to align to calendar boundaries
-        uint48 periodStart = uint48(startOfSpendPeriod(currentTimestamp, spendLimit.period));
-
         // For Forever period, use entire permission duration
-        if (spendLimit.period == SpendPeriod.Forever) {
+        if (spendLimit.unit == PeriodUnit.Forever) {
             return PeriodSpend({ start: permissionStart, end: permissionEnd, spend: 0 });
         }
 
-        // Clamp period start to permission start (can't track spending before permission begins)
+        // Use startOfSpendPeriod to align to calendar boundaries
+        uint48 periodStart = uint48(startOfSpendPeriod(currentTimestamp, spendLimit.unit, spendLimit.multiplier));
+        uint48 periodEnd;
+
+        // If permission starts mid-period, we need to handle the first period specially
+        // to prevent overlapping periods and double-spending
         if (periodStart < permissionStart) {
+            // Permission started mid-period, so first period starts at permission start
             periodStart = permissionStart;
-        }
+            
+            // Calculate the next period boundary after permissionStart
+            if (spendLimit.unit == PeriodUnit.Minute || spendLimit.unit == PeriodUnit.Hour || spendLimit.unit == PeriodUnit.Day) {
+                // For fixed units with multiplier, find the next boundary
+                uint256 baseUnitDuration;
+                if (spendLimit.unit == PeriodUnit.Minute) {
+                    baseUnitDuration = 60;
+                } else if (spendLimit.unit == PeriodUnit.Hour) {
+                    baseUnitDuration = 3600;
+                } else {
+                    baseUnitDuration = 86_400;
+                }
+                uint256 periodDuration = baseUnitDuration * uint256(spendLimit.multiplier);
+                // Find the next period boundary after permissionStart
+                uint256 nextBoundary = Math.rawMul(Math.rawDiv(uint256(permissionStart), periodDuration) + 1, periodDuration);
+                
+                // Check for overflow before casting
+                if (nextBoundary > type(uint48).max) {
+                    revert JustaPermissionManager_PeriodOverflow();
+                }
+                periodEnd = uint48(nextBoundary);
+            } else {
+                // For calendar-aligned units, find the period start that contains permissionStart
+                // (not currentTimestamp, since permissionStart is what matters for the first period)
+                uint48 permissionPeriodStart = uint48(startOfSpendPeriod(permissionStart, spendLimit.unit, spendLimit.multiplier));
+                uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier, permissionPeriodStart);
+                uint256 calculatedEnd = uint256(permissionPeriodStart) + uint256(duration);
+                
+                // Check for overflow before casting
+                if (calculatedEnd > type(uint48).max) {
+                    revert JustaPermissionManager_PeriodOverflow();
+                }
+                periodEnd = uint48(calculatedEnd);
+            }
+        } else {
+            // Normal case: period start is at or after permission start
+            // Calculate period end using duration
+            uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier, periodStart);
+            uint256 calculatedEnd = uint256(periodStart) + uint256(duration);
 
-        // Calculate period end using duration
-        uint48 duration = _periodDuration(spendLimit.period, periodStart);
-        uint256 calculatedEnd = uint256(periodStart) + uint256(duration);
+            // Check for overflow before casting
+            if (calculatedEnd > type(uint48).max) {
+                revert JustaPermissionManager_PeriodOverflow();
+            }
 
-        // Check for overflow before casting
-        if (calculatedEnd > type(uint48).max) {
-            revert JustaPermissionManager_PeriodOverflow();
+            periodEnd = uint48(calculatedEnd);
         }
 
         // Cap at permission end
-        uint48 periodEnd = calculatedEnd > permissionEnd ? permissionEnd : uint48(calculatedEnd);
+        if (periodEnd > permissionEnd) {
+            periodEnd = permissionEnd;
+        }
 
         return PeriodSpend({ start: periodStart, end: periodEnd, spend: 0 });
     }
@@ -1026,7 +1116,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     function _hashSpendLimit(SpendLimit calldata spendLimit) internal pure returns (bytes32) {
-        return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.period));
+        return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.unit, spendLimit.multiplier));
     }
 
     function _executeBatch(address account, BaseAccount.Call[] memory calls) internal {

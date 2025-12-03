@@ -67,7 +67,8 @@ contract TestViewFunctions is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 6 // 6-hour limit
         });
 
         JustaPermissionManager.Permission memory permission2 = JustaPermissionManager.Permission({

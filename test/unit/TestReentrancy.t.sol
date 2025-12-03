@@ -30,14 +30,15 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(reentrantToken),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 4 // 4-hour limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 2 days),
             salt: 300,
             calls: calls,
             spends: spends
@@ -111,14 +112,15 @@ contract TestReentrancy is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(reentrantToken),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 5 // 5-day limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
             account: account,
             spender: spender,
             start: uint48(block.timestamp),
-            end: uint48(block.timestamp + 1 days),
+            end: uint48(block.timestamp + 30 days),
             salt: 301,
             calls: calls,
             spends: spends

@@ -137,7 +137,8 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
         });
 
         uint48 futureStart = uint48(block.timestamp + 1 hours);
@@ -178,8 +179,8 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         vm.prank(account);
         manager.approve(permission);
 
-        // Warp past end time
-        vm.warp(block.timestamp + 2 days);
+        // Warp past end time (permission ends at block.timestamp + 7 days)
+        vm.warp(block.timestamp + 8 days);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
@@ -365,12 +366,14 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         spends[0] = JustaPermissionManager.SpendLimit({
             token: address(erc20),
             allowance: 100 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Hour,
+            multiplier: 6 // 6-hour limit
         });
         spends[1] = JustaPermissionManager.SpendLimit({
             token: NATIVE_TOKEN,
             allowance: 1 ether,
-            period: JustaPermissionManager.SpendPeriod.Day
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 2 // 2-day limit
         });
 
         JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
@@ -458,6 +461,90 @@ contract TestExecuteBatch is JustaPermissionManagerTestBase {
         );
         vm.prank(spender);
         manager.executeBatch(permission, calls3);
+    }
+
+    function test_ExecuteBatchWithEmptyCalldata() public {
+        // Test that empty calldata is handled correctly (uses EMPTY_CALLDATA_FN_SEL)
+        JustaPermissionManager.Permission memory permission = _createPermissionWithNativeToken();
+
+        vm.prank(account);
+        manager.approve(permission);
+
+        // Empty calldata should match EMPTY_CALLDATA_FN_SEL permission
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({ target: randomUser, value: 0.5 ether, data: "" });
+
+        uint256 balanceBefore = randomUser.balance;
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        assertEq(randomUser.balance, balanceBefore + 0.5 ether);
+    }
+
+    function test_ExecuteBatchWithShortCalldata() public {
+        // Test calls with calldata shorter than 4 bytes (1-3 bytes)
+        // Should skip function selector parsing and use EMPTY_CALLDATA_FN_SEL
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = JustaPermissionManager.CallPermission({ target: randomUser, selector: EMPTY_CALLDATA_FN_SEL });
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = JustaPermissionManager.SpendLimit({
+            token: NATIVE_TOKEN,
+            allowance: 1 ether,
+            unit: JustaPermissionManager.PeriodUnit.Day,
+            multiplier: 1
+        });
+
+        JustaPermissionManager.Permission memory permission = JustaPermissionManager.Permission({
+            account: account,
+            spender: spender,
+            start: uint48(block.timestamp),
+            end: uint48(block.timestamp + 1 days),
+            salt: 51,
+            calls: calls,
+            spends: spends
+        });
+
+        vm.prank(account);
+        manager.approve(permission);
+
+        // 3 bytes of calldata - should be treated as empty (EMPTY_CALLDATA_FN_SEL)
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({ target: randomUser, value: 0.1 ether, data: hex"010203" });
+
+        uint256 balanceBefore = randomUser.balance;
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+
+        assertEq(randomUser.balance, balanceBefore + 0.1 ether);
+    }
+
+    function test_ExecuteBatchWithOnlyNativeTokenNoERC20Tracking() public {
+        // Test that executeBatch works correctly when there are only native token transfers
+        // and no ERC20 tokens to track (empty erc20s array)
+        JustaPermissionManager.Permission memory permission = _createPermissionWithNativeToken();
+
+        vm.prank(account);
+        manager.approve(permission);
+
+        // Multiple native token transfers with no ERC20 operations
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](2);
+        calls[0] = BaseAccount.Call({ target: randomUser, value: 0.3 ether, data: "" });
+        calls[1] = BaseAccount.Call({ target: randomUser, value: 0.2 ether, data: "" });
+
+        uint256 balanceBefore = randomUser.balance;
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        assertEq(randomUser.balance, balanceBefore + 0.5 ether);
+
+        // Verify native token spend is tracked
+        JustaPermissionManager.PeriodSpend memory period =
+            manager.getLastUpdatedPeriod(permission, permission.spends[0]);
+        assertEq(period.spend, 0.5 ether);
     }
 
 }
