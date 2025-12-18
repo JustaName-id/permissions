@@ -1,21 +1,60 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { JustaPermissionManager } from "../../../src/JustaPermissionManager.sol";
-import { JustaPermissionManagerTestBase } from "../utils/JustaPermissionManagerTestBase.sol";
+import { Test } from "forge-std/Test.sol";
 
-contract TestConstants is JustaPermissionManagerTestBase {
+import { CodeConstants } from "../../script/HelperConfig.s.sol";
+import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
 
-    /*//////////////////////////////////////////////////////////////
-                        CONSTANTS TESTS
-    //////////////////////////////////////////////////////////////*/
+/**
+ * @title TestConstants
+ * @notice Unit tests for JustaPermissionManager constant values.
+ */
+contract TestConstants is Test, CodeConstants {
 
-    function test_ConstantsAreCorrect() public view {
-        assertEq(manager.NATIVE_TOKEN(), 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
-        assertEq(manager.PERMIT2(), 0x000000000022D473030F116dDEE9F6B43aC78BA3);
-        assertEq(manager.ANY_TARGET(), 0x3232323232323232323232323232323232323232);
-        assertEq(manager.ANY_FN_SEL(), bytes4(0x32323232));
-        assertEq(manager.EMPTY_CALLDATA_FN_SEL(), bytes4(0xe0e0e0e0));
+    JustaPermissionManager public manager;
+
+    function setUp() public {
+        manager = new JustaPermissionManager();
     }
 
+    /*//////////////////////////////////////////////////////////////
+                        CONSTANT VALUE TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_ShouldReturnCorrectNativeToken() public view {
+        assertEq(manager.NATIVE_TOKEN(), NATIVE_TOKEN);
+    }
+
+    function test_ShouldReturnCorrectPermit2Address() public view {
+        assertEq(manager.PERMIT2(), PERMIT2);
+    }
+
+    function test_ShouldReturnCorrectAnyTarget() public view {
+        assertEq(manager.ANY_TARGET(), ANY_TARGET);
+    }
+
+    function test_ShouldReturnCorrectAnyFnSel() public view {
+        assertEq(manager.ANY_FN_SEL(), ANY_FN_SEL);
+    }
+
+    function test_ShouldReturnCorrectEmptyCalldataFnSel() public view {
+        assertEq(manager.EMPTY_CALLDATA_FN_SEL(), EMPTY_CALLDATA_FN_SEL);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        TYPEHASH TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_ShouldReturnCorrectCallPermissionTypehash() public view {
+        assertEq(manager.CALL_PERMISSION_TYPEHASH(), CALL_PERMISSION_TYPEHASH);
+    }
+
+    function test_ShouldReturnCorrectSpendLimitTypehash() public view {
+        assertEq(manager.SPEND_LIMIT_TYPEHASH(), SPEND_LIMIT_TYPEHASH);
+    }
+
+    function test_ShouldReturnCorrectPermissionTypehash() public view {
+        assertEq(manager.PERMISSION_TYPEHASH(), PERMISSION_TYPEHASH);
+    }
 }
