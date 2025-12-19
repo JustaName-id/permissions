@@ -90,4 +90,58 @@ contract PreparePermission is Script, CodeConstants {
         });
     }
 
+    /**
+     * @notice Creates a basic permission with a single call and single spend limit.
+     * @param account The account that owns the permission.
+     * @param spender The address authorized to use the permission.
+     * @param start The permission start timestamp.
+     * @param end The permission end timestamp.
+     * @param salt A unique salt to differentiate permissions.
+     * @param target The target contract address for the call permission.
+     * @param selector The function selector for the call permission.
+     * @param token The token address for the spend limit.
+     * @param allowance The spend allowance.
+     * @param periodUnit The period unit (0-6).
+     * @param multiplier The period multiplier.
+     * @return permission The constructed Permission struct.
+     */
+    function createBasicPermission(
+        address account,
+        address spender,
+        uint48 start,
+        uint48 end,
+        uint256 salt,
+        address target,
+        bytes4 selector,
+        address token,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+        pure
+        returns (JustaPermissionManager.Permission memory permission)
+    {
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = JustaPermissionManager.CallPermission({ target: target, selector: selector });
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = JustaPermissionManager.SpendLimit({
+            token: token,
+            allowance: allowance,
+            unit: JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier: multiplier
+        });
+
+        return JustaPermissionManager.Permission({
+            account: account,
+            spender: spender,
+            start: start,
+            end: end,
+            salt: salt,
+            calls: calls,
+            spends: spends
+        });
+    }
+
 }
