@@ -6,11 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { CodeConstants } from "../../script/HelperConfig.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
 
-/**
- * @title TestConstants
- * @notice Unit tests for JustaPermissionManager constant values.
- */
-contract TestConstants is Test, CodeConstants {
+contract TestReadFunctions is Test, CodeConstants {
 
     JustaPermissionManager public manager;
 
