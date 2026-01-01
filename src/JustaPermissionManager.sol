@@ -626,6 +626,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         // ============================================================
         // STEP 3: EXECUTE ALL CALLS
+        // ============================================================
 
         _executeBatch(permission.account, calls);
 
