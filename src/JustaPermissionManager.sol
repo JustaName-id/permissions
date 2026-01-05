@@ -23,6 +23,8 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 
 import { IAllowanceTransfer } from "@permit2/src/interfaces/IAllowanceTransfer.sol";
 
+import { ICallChecker } from "./interfaces/ICallChecker.sol";
+
 /**
  * @title JustaPermissionManager
  *
@@ -173,6 +175,26 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     error JustaPermissionManager_ZeroMultiplier();
 
+    /**
+     * @notice Thrown when a call checker rejects the execution.
+     * @param target The target contract address.
+     * @param selector The function selector.
+     * @param checker The checker contract that rejected the call.
+     */
+    error JustaPermissionManager_CheckerRejectedCall(address target, bytes4 selector, address checker);
+
+    /**
+     * @notice Thrown when attempting to set a checker for an invalid call index.
+     * @param callIndex The invalid call index.
+     * @param callsLength The total number of calls in the permission.
+     */
+    error JustaPermissionManager_InvalidCallIndex(uint256 callIndex, uint256 callsLength);
+
+    /**
+     * @notice Thrown when attempting to set a checker on a wildcard call permission.
+     */
+    error JustaPermissionManager_CheckerWithWildcardNotAllowed();
+
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
     ////////////////////////////////////////////////////////////////////////
@@ -298,6 +320,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     mapping(bytes32 permissionHash => mapping(bytes32 spendLimitHash => PeriodSpend)) internal _lastUpdatedPeriod;
 
+    /**
+     * @notice Call checkers for specific call permissions within a permission.
+     * @dev Maps permissionHash => callIndex => checker address.
+     */
+    mapping(bytes32 permissionHash => mapping(uint256 callIndex => address checker)) internal _callCheckers;
+
     ////////////////////////////////////////////////////////////////////////
     // EVENTS
     ////////////////////////////////////////////////////////////////////////
@@ -306,6 +334,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     event PermissionRevoked(bytes32 indexed permissionHash);
     event CallsExecuted(bytes32 indexed permissionHash);
     event SpendLimitUsed(bytes32 indexed permissionHash, address indexed token, PeriodSpend periodSpend);
+    event CallCheckerSet(bytes32 indexed permissionHash, uint256 indexed callIndex, address checker);
 
     ////////////////////////////////////////////////////////////////////////
     // MODIFIERS
@@ -453,6 +482,39 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         _revoke(permission);
     }
 
+    /**
+     * @notice Set a call checker for a specific call permission within a permission.
+     * @dev Only the account owner can set call checkers. Checkers cannot be set on wildcard call permissions.
+     * @param permission The permission containing the call to set a checker for.
+     * @param callIndex The index of the call permission to set a checker for.
+     * @param checker The checker contract address (address(0) to remove).
+     */
+    function setCallChecker(
+        Permission calldata permission,
+        uint256 callIndex,
+        address checker
+    )
+        external
+        requireSender(permission.account)
+    {
+        bytes32 hash = getHash(permission);
+
+        if (!_isApproved[hash]) {
+            revert JustaPermissionManager_UnauthorizedPermission();
+        }
+
+        if (callIndex >= permission.calls.length) {
+            revert JustaPermissionManager_InvalidCallIndex(callIndex, permission.calls.length);
+        }
+
+        if (permission.calls[callIndex].target == ANY_TARGET || permission.calls[callIndex].selector == ANY_FN_SEL) {
+            revert JustaPermissionManager_CheckerWithWildcardNotAllowed();
+        }
+
+        _callCheckers[hash][callIndex] = checker;
+        emit CallCheckerSet(hash, callIndex, checker);
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // EXECUTION FUNCTIONS
     ////////////////////////////////////////////////////////////////////////
@@ -489,7 +551,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         _checkPermissionTimeBounds(permission.start, permission.end);
 
         // ============================================================
-        // STEP 1: CHECK EXECUTION PERMISSIONS (FIRST - FAIL FAST)
+        // STEP 1: CHECK EXECUTION PERMISSIONS + CHECKERS (FAIL FAST)
         // ============================================================
         uint256 callsLength = calls.length;
         for (uint256 i = 0; i < callsLength;) {
@@ -507,10 +569,24 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             bytes4 selector =
                 calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
-            // Check if this call is authorized
-            if (!_isCallAuthorized(permission, calls[i].target, selector)) {
+            // Check if this call matches any CallPermission
+            (bool matched, uint256 matchIndex) = _findMatchingCall(permission, calls[i].target, selector);
+            if (!matched) {
                 revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
             }
+
+            // Check call checker if set
+            address checker = _callCheckers[hash][matchIndex];
+            if (checker != address(0)) {
+                if (
+                    !ICallChecker(checker).canExecute(
+                        hash, permission.account, permission.spender, calls[i].target, calls[i].value, calls[i].data
+                    )
+                ) {
+                    revert JustaPermissionManager_CheckerRejectedCall(calls[i].target, selector, checker);
+                }
+            }
+
             unchecked {
                 ++i;
             }
@@ -724,6 +800,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         return _isRevoked[getHash(permission)];
     }
 
+    function getCallChecker(Permission calldata permission, uint256 callIndex) external view returns (address) {
+        return _callCheckers[getHash(permission)][callIndex];
+    }
+
     function getLastUpdatedPeriod(
         Permission calldata permission,
         SpendLimit calldata spendLimit
@@ -785,9 +865,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         );
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // INTERNAL HELPERS
-    ////////////////////////////////////////////////////////////////////////
 
     /**
      * @notice Rounds the unix timestamp down to the period start.
@@ -856,6 +933,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         revert(); // We shouldn't hit here.
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // INTERNAL HELPERS
+    ////////////////////////////////////////////////////////////////////////
+
     /**
      * @notice Get the duration of a spend period in seconds.
      * @dev For fixed units (Minute, Hour, Day), returns baseDuration * multiplier.
@@ -915,20 +996,37 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         pure
         returns (bool)
     {
+        (bool matched,) = _findMatchingCall(permission, target, selector);
+        return matched;
+    }
+
+    /**
+     * @notice Find a matching call permission and return its index.
+     * @dev Returns (true, index) if found, (false, 0) if not found.
+     */
+    function _findMatchingCall(
+        Permission calldata permission,
+        address target,
+        bytes4 selector
+    )
+        internal
+        pure
+        returns (bool matched, uint256 matchIndex)
+    {
         uint256 callsLength = permission.calls.length;
         for (uint256 i = 0; i < callsLength;) {
             bool targetMatch = permission.calls[i].target == target || permission.calls[i].target == ANY_TARGET;
             bool selectorMatch = permission.calls[i].selector == selector || permission.calls[i].selector == ANY_FN_SEL;
 
             if (targetMatch && selectorMatch) {
-                return true;
+                return (true, i);
             }
             unchecked {
                 ++i;
             }
         }
 
-        return false;
+        return (false, 0);
     }
 
     function _checkAndIncrementSpend(
