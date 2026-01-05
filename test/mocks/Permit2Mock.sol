@@ -3,11 +3,16 @@ pragma solidity 0.8.30;
 
 /**
  * @notice Simplified Permit2 mock for testing
- * @dev Only implements the approve function that the permission manager calls
+ * @dev Implements approve and lockdown functions that the permission manager calls
  */
 contract Permit2Mock {
 
     mapping(address => mapping(address => uint160)) public allowance;
+
+    struct TokenSpenderPair {
+        address token;
+        address spender;
+    }
 
     event Approval(
         address indexed owner, address indexed token, address indexed spender, uint160 amount, uint48 expiration
@@ -20,6 +25,16 @@ contract Permit2Mock {
     function approve(address token, address spender, uint160 amount, uint48 expiration) external {
         allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, token, spender, amount, expiration);
+    }
+
+    /**
+     * @notice Lockdown function to revoke approvals
+     * @dev Called by permission manager to revoke Permit2 approvals after execution
+     */
+    function lockdown(TokenSpenderPair[] calldata approvals) external {
+        for (uint256 i = 0; i < approvals.length; i++) {
+            allowance[msg.sender][approvals[i].spender] = 0;
+        }
     }
 
     /**
