@@ -206,7 +206,13 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
      * @dev The permission IS approved, but executeBatch fails because
      *      PermissionManager cannot call account.executeBatch().
      */
-    function test_ShouldFailIfManagerNotAddedAsOwner(address spender, address recipient, uint160 allowance) public {
+    function test_ShouldFailIfManagerNotAddedAsOwner(
+        address spender,
+        address recipient,
+        uint160 allowance
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -234,8 +240,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
         assertTrue(manager.isApproved(permission), "Permission should be approved");
 
         assertFalse(
-            JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(address(manager)),
-            "Manager should NOT be an owner"
+            JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(address(manager)), "Manager should NOT be an owner"
         );
 
         uint256 transferAmount = allowance / 2;
@@ -318,12 +323,8 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
         vm.prank(TEST_ACCOUNT_ADDRESS);
         JustanAccount(TEST_ACCOUNT_ADDRESS).executeBatch(setupCalls);
 
-        assertTrue(
-            JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(address(manager)), "Manager should be an owner"
-        );
-        assertTrue(
-            JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(recoveryContract), "Recovery should be an owner"
-        );
+        assertTrue(JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(address(manager)), "Manager should be an owner");
+        assertTrue(JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(recoveryContract), "Recovery should be an owner");
 
         uint256 transferAmount = allowance / 2;
         vm.assume(transferAmount > 0);
