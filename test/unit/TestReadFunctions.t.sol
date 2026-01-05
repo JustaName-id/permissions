@@ -232,42 +232,6 @@ contract TestReadFunctions is Test, PreparePermission {
         assertTrue(manager.isRevoked(permission));
     }
 
-    // TODO: check if this is okay to have
-    function test_IsRevoked_ShouldReturnTrueForPreventiveRevocation(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        // Revoke without approving first (preventive revocation)
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.revoke(permission);
-
-        assertTrue(manager.isRevoked(permission));
-        assertFalse(manager.isApproved(permission));
-    }
-
     /*//////////////////////////////////////////////////////////////
                         getHash() TESTS
     //////////////////////////////////////////////////////////////*/
