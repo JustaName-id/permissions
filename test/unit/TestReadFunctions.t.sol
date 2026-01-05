@@ -3,9 +3,9 @@ pragma solidity 0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 
-import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { PreparePermission } from "../../script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
+import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 
 contract TestReadFunctions is Test, PreparePermission {
 
@@ -67,7 +67,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -97,7 +100,9 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -131,7 +136,9 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -172,7 +179,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -202,7 +212,9 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -242,7 +254,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -274,7 +289,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -320,7 +338,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint8 multiplier,
         uint256 salt1,
         uint256 salt2
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -333,10 +354,7 @@ contract TestReadFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission1 = createPermission(
@@ -369,7 +387,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender1 != address(0));
         vm.assume(spender2 != address(0));
         vm.assume(spender1 != spender2);
@@ -419,7 +440,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -441,10 +465,7 @@ contract TestReadFunctions is Test, PreparePermission {
         );
 
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
@@ -460,7 +481,9 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -485,10 +508,7 @@ contract TestReadFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
@@ -509,7 +529,10 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public view {
+    )
+        public
+        view
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -531,10 +554,7 @@ contract TestReadFunctions is Test, PreparePermission {
         );
 
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getCurrentPeriod(permission, spendLimit);
@@ -550,7 +570,9 @@ contract TestReadFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -572,10 +594,7 @@ contract TestReadFunctions is Test, PreparePermission {
         );
 
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         vm.expectRevert(
@@ -640,4 +659,6 @@ contract TestReadFunctions is Test, PreparePermission {
 
     //     manager.getCurrentPeriod(permission, spendLimit);
     // }
+
+
 }

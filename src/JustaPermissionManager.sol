@@ -273,7 +273,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     bytes32 public constant CALL_PERMISSION_TYPEHASH = keccak256("CallPermission(address target,bytes4 selector)");
 
-    bytes32 public constant SPEND_LIMIT_TYPEHASH = keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
+    bytes32 public constant SPEND_LIMIT_TYPEHASH =
+        keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
         "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
@@ -676,17 +677,17 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (permit2Length > 0) {
             // Permit2.lockdown takes an array of (address token, address spender) tuples
             // The function signature is: lockdown((address,address)[])
-            IAllowanceTransfer.TokenSpenderPair[] memory approvals = new IAllowanceTransfer.TokenSpenderPair[](permit2Length);
+            IAllowanceTransfer.TokenSpenderPair[] memory approvals =
+                new IAllowanceTransfer.TokenSpenderPair[](permit2Length);
             for (uint256 i; i < permit2Length; ++i) {
-                approvals[i] =
-                    IAllowanceTransfer.TokenSpenderPair({ token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i) });
+                approvals[i] = IAllowanceTransfer.TokenSpenderPair({
+                    token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i)
+                });
             }
 
             BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
             permit2RevokeCalls[0] = BaseAccount.Call({
-                target: PERMIT2,
-                value: 0,
-                data: abi.encodeWithSelector(IAllowanceTransfer.lockdown.selector, approvals)
+                target: PERMIT2, value: 0, data: abi.encodeWithSelector(IAllowanceTransfer.lockdown.selector, approvals)
             });
             _executeBatch(permission.account, permit2RevokeCalls);
         }
@@ -798,7 +799,15 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      *      - Year: Aligns to Jan 1st, then groups N years together
      *      - Forever: Returns 1 (non-zero to differentiate from unset, multiplier ignored)
      */
-    function startOfSpendPeriod(uint256 unixTimestamp, PeriodUnit unit, uint8 multiplier) public pure returns (uint256) {
+    function startOfSpendPeriod(
+        uint256 unixTimestamp,
+        PeriodUnit unit,
+        uint8 multiplier
+    )
+        public
+        pure
+        returns (uint256)
+    {
         if (unit == PeriodUnit.Forever) {
             return 1; // Non-zero to differentiate from not set.
         }
@@ -825,7 +834,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             uint256 monday = DateTimeLib.mondayTimestamp(unixTimestamp);
             // Calculate weeks since epoch (Jan 1, 1970 was a Thursday, so first Monday is Jan 5, 1970)
             // Reference Monday: Jan 5, 1970 00:00:00 UTC = 86400 * 4 = 345600
-            uint256 referenceMonday = 345600;
+            uint256 referenceMonday = 345_600;
             if (monday < referenceMonday) {
                 return monday; // Before reference, return as-is
             }
@@ -861,7 +870,15 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @dev For fixed units (Minute, Hour, Day), returns baseDuration * multiplier.
      *      For calendar units (Week, Month, Year), calculates duration for N units.
      */
-    function _periodDuration(PeriodUnit unit, uint8 multiplier, uint256 periodStart) internal pure returns (uint48) {
+    function _periodDuration(
+        PeriodUnit unit,
+        uint8 multiplier,
+        uint256 periodStart
+    )
+        internal
+        pure
+        returns (uint48)
+    {
         if (unit == PeriodUnit.Minute) {
             return 60 * uint48(multiplier);
         }
@@ -1045,9 +1062,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (periodStart < permissionStart) {
             // Permission started mid-period, so first period starts at permission start
             periodStart = permissionStart;
-            
+
             // Calculate the next period boundary after permissionStart
-            if (spendLimit.unit == PeriodUnit.Minute || spendLimit.unit == PeriodUnit.Hour || spendLimit.unit == PeriodUnit.Day) {
+            if (
+                spendLimit.unit == PeriodUnit.Minute || spendLimit.unit == PeriodUnit.Hour
+                    || spendLimit.unit == PeriodUnit.Day
+            ) {
                 // For fixed units with multiplier, find the next boundary
                 uint256 baseUnitDuration;
                 if (spendLimit.unit == PeriodUnit.Minute) {
@@ -1059,8 +1079,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 }
                 uint256 periodDuration = baseUnitDuration * uint256(spendLimit.multiplier);
                 // Find the next period boundary after permissionStart
-                uint256 nextBoundary = Math.rawMul(Math.rawDiv(uint256(permissionStart), periodDuration) + 1, periodDuration);
-                
+                uint256 nextBoundary =
+                    Math.rawMul(Math.rawDiv(uint256(permissionStart), periodDuration) + 1, periodDuration);
+
                 // Check for overflow before casting
                 if (nextBoundary > type(uint48).max) {
                     revert JustaPermissionManager_PeriodOverflow();
@@ -1069,10 +1090,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             } else {
                 // For calendar-aligned units, find the period start that contains permissionStart
                 // (not currentTimestamp, since permissionStart is what matters for the first period)
-                uint48 permissionPeriodStart = uint48(startOfSpendPeriod(permissionStart, spendLimit.unit, spendLimit.multiplier));
+                uint48 permissionPeriodStart =
+                    uint48(startOfSpendPeriod(permissionStart, spendLimit.unit, spendLimit.multiplier));
                 uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier, permissionPeriodStart);
                 uint256 calculatedEnd = uint256(permissionPeriodStart) + uint256(duration);
-                
+
                 // Check for overflow before casting
                 if (calculatedEnd > type(uint48).max) {
                     revert JustaPermissionManager_PeriodOverflow();
@@ -1121,7 +1143,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     function _hashSpendLimit(SpendLimit calldata spendLimit) internal pure returns (bytes32) {
-        return keccak256(abi.encode(SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.unit, spendLimit.multiplier));
+        return keccak256(
+            abi.encode(
+                SPEND_LIMIT_TYPEHASH, spendLimit.token, spendLimit.allowance, spendLimit.unit, spendLimit.multiplier
+            )
+        );
     }
 
     function _executeBatch(address account, BaseAccount.Call[] memory calls) internal {
