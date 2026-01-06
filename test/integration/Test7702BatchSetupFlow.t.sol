@@ -427,9 +427,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
         manager.executeBatch(permission, spenderCalls);
 
         assertEq(
-            mockToken.balanceOf(recipient),
-            recipientBalanceBefore + transferAmount,
-            "Full cross-chain flow should work"
+            mockToken.balanceOf(recipient), recipientBalanceBefore + transferAmount, "Full cross-chain flow should work"
         );
     }
 
