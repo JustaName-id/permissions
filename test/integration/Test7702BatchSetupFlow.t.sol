@@ -4,7 +4,7 @@ pragma solidity 0.8.30;
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Test } from "forge-std/Test.sol";
+import { Test, Vm } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { MultiOwnable } from "justanaccount/MultiOwnable.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
@@ -346,6 +346,90 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             mockToken.balanceOf(recipient),
             recipientBalanceBefore + transferAmount,
             "Recipient should receive tokens via permission"
+        );
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // CROSS-CHAIN DELEGATION
+    ////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Tests upgrading to a Smart Account using cross-chain delegation in one step.
+     */
+    function test_ShouldWorkWithCrossChainDelegation(
+        address spender,
+        address recipient,
+        uint160 allowance
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+
+        uint256 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+        vm.assume(transferAmount <= INITIAL_BALANCE);
+
+        // Use cross-chain delegation (chainId=0, replayable across all chains)
+        // The 'true' parameter means crossChain=true (chainId=0)
+        vm.signAndAttachDelegation(address(justanAccountImpl), TEST_ACCOUNT_PRIVATE_KEY, true);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            100,
+            address(mockToken),
+            TRANSFER_SELECTOR,
+            address(mockToken),
+            allowance,
+            6,
+            1
+        );
+
+        // Batch addOwnerAddress + approve in the same tx as delegation activation
+        BaseAccount.Call[] memory setupCalls = new BaseAccount.Call[](2);
+        setupCalls[0] = BaseAccount.Call({
+            target: TEST_ACCOUNT_ADDRESS,
+            value: 0,
+            data: abi.encodeWithSelector(MultiOwnable.addOwnerAddress.selector, address(manager))
+        });
+        setupCalls[1] = BaseAccount.Call({
+            target: address(manager),
+            value: 0,
+            data: abi.encodeWithSelector(JustaPermissionManager.approve.selector, permission)
+        });
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        JustanAccount(TEST_ACCOUNT_ADDRESS).executeBatch(setupCalls);
+
+        assertTrue(
+            JustanAccount(TEST_ACCOUNT_ADDRESS).isOwnerAddress(address(manager)),
+            "Manager should be an owner after cross-chain delegation + batch"
+        );
+        assertTrue(manager.isApproved(permission), "Permission should be approved");
+
+        BaseAccount.Call[] memory spenderCalls = new BaseAccount.Call[](1);
+        spenderCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        uint256 recipientBalanceBefore = mockToken.balanceOf(recipient);
+
+        vm.prank(spender);
+        manager.executeBatch(permission, spenderCalls);
+
+        assertEq(
+            mockToken.balanceOf(recipient),
+            recipientBalanceBefore + transferAmount,
+            "Full cross-chain flow should work"
         );
     }
 
