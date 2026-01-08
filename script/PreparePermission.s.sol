@@ -61,7 +61,26 @@ contract PreparePermission is Script, CodeConstants {
         pure
         returns (JustaPermissionManager.CallPermission memory call)
     {
-        return JustaPermissionManager.CallPermission({ target: target, selector: selector });
+        return JustaPermissionManager.CallPermission({ target: target, selector: selector, checker: address(0) });
+    }
+
+    /**
+     * @notice Creates a single CallPermission struct with a checker.
+     * @param target The target contract address.
+     * @param selector The function selector.
+     * @param checker The checker contract address (address(0) for no checker).
+     * @return call The constructed CallPermission struct.
+     */
+    function createCallWithChecker(
+        address target,
+        bytes4 selector,
+        address checker
+    )
+        public
+        pure
+        returns (JustaPermissionManager.CallPermission memory call)
+    {
+        return JustaPermissionManager.CallPermission({ target: target, selector: selector, checker: checker });
     }
 
     /**
@@ -123,7 +142,7 @@ contract PreparePermission is Script, CodeConstants {
         returns (JustaPermissionManager.Permission memory permission)
     {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({ target: target, selector: selector });
+        calls[0] = JustaPermissionManager.CallPermission({ target: target, selector: selector, checker: address(0) });
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = JustaPermissionManager.SpendLimit({
