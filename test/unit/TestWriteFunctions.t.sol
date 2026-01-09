@@ -3,12 +3,12 @@ pragma solidity 0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 
+import { ICallChecker } from "../../src/interfaces/ICallChecker.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { PreparePermission } from "../../script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
-import { ICallChecker } from "../../src/interfaces/ICallChecker.sol";
 import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { ERC721Mock } from "../mocks/ERC721Mock.sol";
@@ -609,6 +609,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.revoke(permission);
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
@@ -810,6 +813,41 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.revoke(permission);
     }
 
+    function test_Revoke_RevertIfNotApproved(
+        address spender,
+        bytes4 selector,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(selector != bytes4(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            selector,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.revoke(permission);
+    }
+
     function test_Revoke_ShouldBeIdempotent(
         address spender,
         bytes4 selector,
@@ -840,11 +878,13 @@ contract TestWriteFunctions is Test, PreparePermission {
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.revoke(permission);
 
         assertTrue(manager.isRevoked(permission));
 
-        // Second revoke should not revert
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.revoke(permission);
 
@@ -879,6 +919,9 @@ contract TestWriteFunctions is Test, PreparePermission {
             periodUnit,
             multiplier
         );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
 
         bytes32 expectedHash = manager.getHash(permission);
 
@@ -937,6 +980,41 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.revokeAsSpender(permission);
     }
 
+    function test_RevokeAsSpender_RevertIfNotApproved(
+        address spender,
+        bytes4 selector,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(selector != bytes4(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            selector,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
+
+        vm.prank(spender);
+        manager.revokeAsSpender(permission);
+    }
+
     function test_RevokeAsSpender_ShouldBeIdempotent(
         address spender,
         bytes4 selector,
@@ -966,12 +1044,14 @@ contract TestWriteFunctions is Test, PreparePermission {
             multiplier
         );
 
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
         vm.prank(spender);
         manager.revokeAsSpender(permission);
 
         assertTrue(manager.isRevoked(permission));
 
-        // Second revoke should not revert
         vm.prank(spender);
         manager.revokeAsSpender(permission);
 
@@ -1006,6 +1086,9 @@ contract TestWriteFunctions is Test, PreparePermission {
             periodUnit,
             multiplier
         );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
 
         bytes32 expectedHash = manager.getHash(permission);
 

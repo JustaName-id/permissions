@@ -1177,6 +1177,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             return;
         }
 
+        if (!_isApproved[hash]) {
+            revert JustaPermissionManager_UnauthorizedPermission();
+        }
+
         _isRevoked[hash] = true;
         emit PermissionRevoked(hash);
     }
