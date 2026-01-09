@@ -9,9 +9,9 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC20Mock } from "../mocks/ERC20Mock.sol";
 import { ERC721Mock } from "../mocks/ERC721Mock.sol";
 import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
-import { CallCheckerMock } from "../mocks/CallCheckerMock.sol";
 import { PreparePermission } from "../../script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
+import { ICallChecker } from "../../src/interfaces/ICallChecker.sol";
 
 contract TestWriteFunctions is Test, PreparePermission {
 
@@ -19,14 +19,12 @@ contract TestWriteFunctions is Test, PreparePermission {
     ERC20Mock public mockToken;
     ERC721Mock public mockERC721;
     ERC1155Mock public mockERC1155;
-    CallCheckerMock public mockChecker;
 
     function setUp() public {
         manager = new JustaPermissionManager();
         mockToken = new ERC20Mock();
         mockERC721 = new ERC721Mock();
         mockERC1155 = new ERC1155Mock();
-        mockChecker = new CallCheckerMock();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -654,6 +652,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     function test_Approve_ShouldApprovePermissionAndEmitEvent(
         address spender,
         bytes4 selector,
+        address checker,
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
@@ -663,19 +662,29 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
         vm.assume(multiplier > 0);
+        // Checker can be address(0) or any valid address except manager and account
+        vm.assume(checker != address(manager));
+        vm.assume(checker != TEST_ACCOUNT_ADDRESS);
 
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), selector, checker);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS,
             spender,
             uint48(block.timestamp),
             uint48(block.timestamp + 1 days),
             0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
+            calls,
+            spends
         );
 
         bytes32 expectedHash = manager.getHash(permission);
@@ -688,6 +697,86 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         assertTrue(result);
         assertTrue(manager.isApproved(permission));
+    }
+
+    function test_Approve_RevertIfCheckerTargetsSelf(
+        address spender,
+        bytes4 selector,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(selector != bytes4(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), selector, address(manager));
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetSelf.selector);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+    }
+
+    function test_Approve_RevertIfCheckerTargetsAccount(
+        address spender,
+        bytes4 selector,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(selector != bytes4(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), selector, TEST_ACCOUNT_ADDRESS);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetAccount.selector);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -1503,6 +1592,476 @@ contract TestWriteFunctions is Test, PreparePermission {
             data: ""
         });
 
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        CALL CHECKER VALIDATION
+    //////////////////////////////////////////////////////////////*/
+
+    function test_ExecuteBatch_ShouldSucceedWithCheckerApproval(
+        address spender,
+        address recipient,
+        address checker,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker != address(0));
+        vm.assume(checker != address(manager));
+        vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock checker to return true
+        vm.mockCall(
+            checker,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(true)
+        );
+
+        // Mock the account's executeBatch to succeed
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS,
+            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
+            ""
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        // Should succeed because checker returns true
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_RevertIfCheckerRejectsCall(
+        address spender,
+        address recipient,
+        address checker,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker != address(0));
+        vm.assume(checker != address(manager));
+        vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock checker to return false
+        vm.mockCall(
+            checker,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(false)
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_CheckerRejectedCall.selector,
+                address(mockToken),
+                TRANSFER_SELECTOR,
+                checker
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_ShouldPassCorrectParamsToChecker(
+        address spender,
+        address recipient,
+        address checker,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker != address(0));
+        vm.assume(checker != address(manager));
+        vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        uint256 callValue = 0;
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        bytes32 permissionHash = manager.getHash(permission);
+        bytes memory callData = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
+
+        // Mock checker to return true
+        vm.mockCall(
+            checker,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(true)
+        );
+
+        // Expect checker to be called with correct params
+        vm.expectCall(
+            checker,
+            abi.encodeWithSelector(
+                ICallChecker.canExecute.selector,
+                permissionHash,
+                TEST_ACCOUNT_ADDRESS,
+                spender,
+                address(mockToken),
+                callValue,
+                callData
+            )
+        );
+
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS,
+            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
+            ""
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: callValue,
+            data: callData
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_ShouldWorkWithoutChecker(
+        address spender,
+        address recipient,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        // Create permission with no checker (address(0))
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS,
+            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
+            ""
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_ShouldCheckAllCallsWithCheckersBeforeExecution(
+        address spender,
+        address recipient1,
+        address recipient2,
+        address checker1,
+        address checker2,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient1 != address(0));
+        vm.assume(recipient2 != address(0));
+        vm.assume(recipient1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(recipient2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != address(0));
+        vm.assume(checker1 != address(manager));
+        vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker2 != address(0));
+        vm.assume(checker2 != address(manager));
+        vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != checker2);
+        vm.assume(allowance > 10);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 4;
+        vm.assume(transferAmount > 0);
+
+        // Two calls with different selectors so each matches a different CallPermission
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker1);
+        calls[1] = createCallWithChecker(address(mockToken), APPROVE_SELECTOR, checker2);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // First checker approves, second checker rejects
+        vm.mockCall(
+            checker1,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            checker2,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(false)
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](2);
+        // First call uses transfer (checker1)
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient1, transferAmount)
+        });
+        // Second call uses approve (checker2)
+        executeCalls[1] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.approve.selector, recipient2, transferAmount)
+        });
+
+        // Should fail-fast on second call's checker rejection
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_CheckerRejectedCall.selector,
+                address(mockToken),
+                APPROVE_SELECTOR,
+                checker2
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_ShouldAllowMixedCheckerCalls(
+        address spender,
+        address recipient1,
+        address recipient2,
+        address checker,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    ) public {
+        vm.assume(spender != address(0));
+        vm.assume(recipient1 != address(0));
+        vm.assume(recipient2 != address(0));
+        vm.assume(recipient1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(recipient2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker != address(0));
+        vm.assume(checker != address(manager));
+        vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 10);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 transferAmount = allowance / 4;
+        vm.assume(transferAmount > 0);
+
+        // One call with checker, one without
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
+        calls[1] = createCall(address(mockToken), TRANSFER_SELECTOR); // No checker
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit(periodUnit),
+            multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock checker to return true
+        vm.mockCall(
+            checker,
+            abi.encodeWithSelector(ICallChecker.canExecute.selector),
+            abi.encode(true)
+        );
+
+        // Mock the account's executeBatch to succeed
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS,
+            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
+            ""
+        );
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](2);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient1, transferAmount)
+        });
+        executeCalls[1] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient2, transferAmount)
+        });
+
+        // Should succeed - first call passes checker, second has no checker
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
     }
@@ -2687,329 +3246,4 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls);
     }
-
-    /*//////////////////////////////////////////////////////////////
-                        setCallChecker() TESTS
-    //////////////////////////////////////////////////////////////*/
-
-    function test_SetCallChecker_ShouldSetChecker(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-
-        assertEq(manager.getCallChecker(permission, 0), address(mockChecker));
-    }
-
-    function test_SetCallChecker_ShouldEmitEvent(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        bytes32 expectedHash = manager.getHash(permission);
-
-        vm.expectEmit(true, true, false, true, address(manager));
-        emit JustaPermissionManager.CallCheckerSet(expectedHash, 0, address(mockChecker));
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-    }
-
-    function test_SetCallChecker_RevertIfNotAccountOwner(
-        address sender,
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(sender != TEST_ACCOUNT_ADDRESS);
-        vm.assume(sender != address(0));
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                sender,
-                TEST_ACCOUNT_ADDRESS
-            )
-        );
-
-        vm.prank(sender);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-    }
-
-    function test_SetCallChecker_RevertIfPermissionNotApproved(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-    }
-
-    function test_SetCallChecker_RevertIfCallIndexInvalid(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidCallIndex.selector,
-                1,
-                1
-            )
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 1, address(mockChecker));
-    }
-
-    function test_SetCallChecker_RevertIfCallHasAnyTargetWildcard(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({ target: ANY_TARGET, selector: selector });
-
-        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = JustaPermissionManager.SpendLimit({
-            token: address(mockToken),
-            allowance: allowance,
-            unit: JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier: multiplier
-        });
-
-        JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CheckerWithWildcardNotAllowed.selector);
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-    }
-
-    function test_SetCallChecker_RevertIfCallHasAnySelectorWildcard(
-        address spender,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
-        calls[0] = JustaPermissionManager.CallPermission({ target: address(mockToken), selector: ANY_FN_SEL });
-
-        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = JustaPermissionManager.SpendLimit({
-            token: address(mockToken),
-            allowance: allowance,
-            unit: JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier: multiplier
-        });
-
-        JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CheckerWithWildcardNotAllowed.selector);
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-    }
-
-    function test_SetCallChecker_ShouldRemoveCheckerWhenSetToZero(
-        address spender,
-        bytes4 selector,
-        uint160 allowance,
-        uint8 periodUnit,
-        uint8 multiplier
-    ) public {
-        vm.assume(spender != address(0));
-        vm.assume(selector != bytes4(0));
-        vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
-        vm.assume(multiplier > 0);
-
-        JustaPermissionManager.Permission memory permission = createBasicPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            address(mockToken),
-            selector,
-            address(mockToken),
-            allowance,
-            periodUnit,
-            multiplier
-        );
-
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.approve(permission);
-
-        // Set checker
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(mockChecker));
-        assertEq(manager.getCallChecker(permission, 0), address(mockChecker));
-
-        // Remove checker
-        vm.prank(TEST_ACCOUNT_ADDRESS);
-        manager.setCallChecker(permission, 0, address(0));
-        assertEq(manager.getCallChecker(permission, 0), address(0));
-    }
-
 }
