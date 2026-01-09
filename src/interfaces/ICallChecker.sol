@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
  * @dev Checkers receive full context and can validate arguments, not just selectors.
  */
 interface ICallChecker {
+
     /**
      * @notice Validates whether a call can be executed.
      * @param permissionHash The hash of the permission being used.
@@ -24,5 +25,9 @@ interface ICallChecker {
         address target,
         uint256 value,
         bytes calldata data
-    ) external view returns (bool);
+    )
+        external
+        view
+        returns (bool);
+
 }

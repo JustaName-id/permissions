@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Test } from "forge-std/Test.sol";
-import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
-import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
+import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
+import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TestPermissionLifecycleFlow
@@ -95,11 +95,7 @@ contract TestPermissionLifecycleFlow is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls);
 
-        assertEq(
-            mockToken.balanceOf(recipient),
-            transferAmount,
-            "First transfer should succeed"
-        );
+        assertEq(mockToken.balanceOf(recipient), transferAmount, "First transfer should succeed");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.revoke(permission);
@@ -119,9 +115,7 @@ contract TestPermissionLifecycleFlow is Test, PreparePermission {
         manager.executeBatch(permission, calls2);
 
         assertEq(
-            mockToken.balanceOf(recipient),
-            transferAmount,
-            "Balance should not change after revoked permission attempt"
+            mockToken.balanceOf(recipient), transferAmount, "Balance should not change after revoked permission attempt"
         );
     }
 

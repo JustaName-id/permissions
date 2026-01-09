@@ -6,12 +6,12 @@ import { Test } from "forge-std/Test.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { ERC20Mock } from "../mocks/ERC20Mock.sol";
-import { ERC721Mock } from "../mocks/ERC721Mock.sol";
-import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
 import { PreparePermission } from "../../script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
 import { ICallChecker } from "../../src/interfaces/ICallChecker.sol";
+import { ERC1155Mock } from "../mocks/ERC1155Mock.sol";
+import { ERC20Mock } from "../mocks/ERC20Mock.sol";
+import { ERC721Mock } from "../mocks/ERC721Mock.sol";
 
 contract TestWriteFunctions is Test, PreparePermission {
 
@@ -38,7 +38,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(sender != TEST_ACCOUNT_ADDRESS);
         vm.assume(sender != address(0));
         vm.assume(spender != address(0));
@@ -63,9 +65,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                sender,
-                TEST_ACCOUNT_ADDRESS
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, sender, TEST_ACCOUNT_ADDRESS
             )
         );
 
@@ -78,7 +78,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
@@ -110,7 +112,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -149,7 +153,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -174,9 +180,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidStartEnd.selector,
-                timestamp,
-                timestamp
+                JustaPermissionManager.JustaPermissionManager_InvalidStartEnd.selector, timestamp, timestamp
             )
         );
 
@@ -189,7 +193,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
@@ -199,20 +205,11 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_EmptyPermission.selector);
@@ -227,7 +224,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -260,7 +259,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -293,7 +294,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -326,7 +329,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(target != address(0));
         vm.assume(target != address(manager));
@@ -361,7 +366,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -393,7 +400,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(periodUnit <= 6);
@@ -424,7 +433,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -456,7 +467,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -479,8 +492,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ERC721TokenNotSupported.selector,
-                address(mockERC721)
+                JustaPermissionManager.JustaPermissionManager_ERC721TokenNotSupported.selector, address(mockERC721)
             )
         );
 
@@ -494,7 +506,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -517,8 +531,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ERC1155TokenNotSupported.selector,
-                address(mockERC1155)
+                JustaPermissionManager.JustaPermissionManager_ERC1155TokenNotSupported.selector, address(mockERC1155)
             )
         );
 
@@ -532,7 +545,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -544,32 +559,19 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         spends[1] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector,
-                address(mockToken)
+                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector, address(mockToken)
             )
         );
 
@@ -583,7 +585,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -619,7 +623,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -656,7 +662,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -671,20 +679,11 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         bytes32 expectedHash = manager.getHash(permission);
@@ -705,7 +704,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -717,20 +718,11 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetSelf.selector);
@@ -745,7 +737,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -757,20 +751,11 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetAccount.selector);
@@ -790,7 +775,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(sender != TEST_ACCOUNT_ADDRESS);
         vm.assume(sender != address(0));
         vm.assume(spender != address(0));
@@ -815,9 +802,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                sender,
-                TEST_ACCOUNT_ADDRESS
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, sender, TEST_ACCOUNT_ADDRESS
             )
         );
 
@@ -831,7 +816,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -870,7 +857,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -913,7 +902,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(sender != spender);
         vm.assume(sender != address(0));
         vm.assume(spender != address(0));
@@ -938,9 +929,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                sender,
-                spender
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, sender, spender
             )
         );
 
@@ -954,7 +943,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -993,7 +984,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1040,7 +1033,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(sender != spender);
         vm.assume(sender != address(0));
         vm.assume(spender != address(0));
@@ -1067,17 +1062,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector,
-                sender,
-                spender
+                JustaPermissionManager.JustaPermissionManager_InvalidSender.selector, sender, spender
             )
         );
 
@@ -1091,7 +1080,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1113,11 +1104,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         );
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
 
@@ -1131,7 +1118,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1159,11 +1148,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.revoke(permission);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_UnauthorizedPermission.selector);
 
@@ -1177,7 +1162,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1205,11 +1192,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -1229,7 +1212,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1260,17 +1245,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.warp(warpedTimestamp);
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_AfterPermissionEnd.selector,
-                warpedTimestamp,
-                pastEnd
+                JustaPermissionManager.JustaPermissionManager_AfterPermissionEnd.selector, warpedTimestamp, pastEnd
             )
         );
 
@@ -1284,7 +1263,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1310,11 +1291,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Try to call the manager itself
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(manager),
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: address(manager), value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetSelf.selector);
 
@@ -1328,7 +1305,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1354,11 +1333,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Try to call the account itself
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: TEST_ACCOUNT_ADDRESS,
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        calls[0] = BaseAccount.Call({ target: TEST_ACCOUNT_ADDRESS, value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetAccount.selector);
 
@@ -1377,7 +1352,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(permittedSelector != bytes4(0));
         vm.assume(attemptedSelector != bytes4(0));
@@ -1405,11 +1382,8 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Try to call with a different selector
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
-        calls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(attemptedSelector)
-        });
+        calls[0] =
+            BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(attemptedSelector) });
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -1430,7 +1404,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(randomTarget != address(0));
         vm.assume(randomTarget != address(manager));
@@ -1445,40 +1421,21 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(ANY_TARGET, selector);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            NATIVE_TOKEN,
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
-        );
+        spends[0] = createSpendLimit(NATIVE_TOKEN, allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Execute with random target - should succeed due to ANY_TARGET
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: randomTarget,
-            value: 0,
-            data: abi.encodeWithSelector(selector)
-        });
+        executeCalls[0] = BaseAccount.Call({ target: randomTarget, value: 0, data: abi.encodeWithSelector(selector) });
 
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
@@ -1490,7 +1447,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(randomSelector != bytes4(0));
         vm.assume(allowance > 0);
@@ -1502,40 +1461,22 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), ANY_FN_SEL);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            NATIVE_TOKEN,
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
-        );
+        spends[0] = createSpendLimit(NATIVE_TOKEN, allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Execute with random selector - should succeed due to ANY_FN_SEL
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: abi.encodeWithSelector(randomSelector)
-        });
+        executeCalls[0] =
+            BaseAccount.Call({ target: address(mockToken), value: 0, data: abi.encodeWithSelector(randomSelector) });
 
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
@@ -1546,7 +1487,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
@@ -1557,40 +1500,21 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), EMPTY_CALLDATA_FN_SEL);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            NATIVE_TOKEN,
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
-        );
+        spends[0] = createSpendLimit(NATIVE_TOKEN, allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Execute with empty calldata - should succeed due to EMPTY_CALLDATA_FN_SEL
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: ""
-        });
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: "" });
 
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
@@ -1607,7 +1531,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -1626,38 +1552,21 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock checker to return true
-        vm.mockCall(
-            checker,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(true)
-        );
+        vm.mockCall(checker, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
@@ -1678,7 +1587,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -1697,31 +1608,18 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock checker to return false
-        vm.mockCall(
-            checker,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(false)
-        );
+        vm.mockCall(checker, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(false));
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
@@ -1750,7 +1648,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -1771,20 +1671,11 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -1794,11 +1685,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes memory callData = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
 
         // Mock checker to return true
-        vm.mockCall(
-            checker,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(true)
-        );
+        vm.mockCall(checker, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
 
         // Expect checker to be called with correct params
         vm.expectCall(
@@ -1814,18 +1701,10 @@ contract TestWriteFunctions is Test, PreparePermission {
             )
         );
 
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: callValue,
-            data: callData
-        });
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: callValue, data: callData });
 
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
@@ -1837,7 +1716,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -1854,30 +1735,17 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
@@ -1899,7 +1767,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient1 != address(0));
         vm.assume(recipient2 != address(0));
@@ -1926,36 +1796,19 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // First checker approves, second checker rejects
-        vm.mockCall(
-            checker1,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            checker2,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(false)
-        );
+        vm.mockCall(checker1, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
+        vm.mockCall(checker2, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(false));
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](2);
         // First call uses transfer (checker1)
@@ -1993,7 +1846,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient1 != address(0));
         vm.assume(recipient2 != address(0));
@@ -2016,38 +1871,21 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock checker to return true
-        vm.mockCall(
-            checker,
-            abi.encodeWithSelector(ICallChecker.canExecute.selector),
-            abi.encode(true)
-        );
+        vm.mockCall(checker, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](2);
         executeCalls[0] = BaseAccount.Call({
@@ -2077,7 +1915,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2108,11 +1948,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Try to transfer secondToken which has no spend permission
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
@@ -2133,7 +1969,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2161,11 +1999,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
@@ -2176,9 +2010,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
-                transferAmount,
-                allowance
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector, transferAmount, allowance
             )
         );
 
@@ -2191,7 +2023,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2218,11 +2052,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // First transfer uses half the allowance
         uint256 firstTransfer = uint256(type(uint160).max) / 2 + 1;
@@ -2263,7 +2093,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(periodUnit <= 6);
@@ -2290,11 +2122,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed (but doesn't actually revoke approval)
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Mock allowance to return non-zero (approval wasn't revoked)
         vm.mockCall(
@@ -2332,7 +2160,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2348,40 +2178,21 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(recipient, EMPTY_CALLDATA_FN_SEL);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            NATIVE_TOKEN,
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
-        );
+        spends[0] = createSpendLimit(NATIVE_TOKEN, allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Execute with native value
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: recipient,
-            value: sendValue,
-            data: ""
-        });
+        executeCalls[0] = BaseAccount.Call({ target: recipient, value: sendValue, data: "" });
 
         vm.prank(spender);
         manager.executeBatch(permission, executeCalls);
@@ -2397,7 +2208,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2426,11 +2239,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
@@ -2444,10 +2253,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify spend was tracked
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount);
@@ -2459,7 +2265,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2488,11 +2296,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // transferFrom where account is the sender
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
@@ -2507,10 +2311,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify spend was tracked
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount);
@@ -2521,7 +2322,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
@@ -2548,18 +2351,16 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // transferFrom where account transfers to itself (should not be tracked)
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
             target: address(mockToken),
             value: 0,
-            data: abi.encodeWithSelector(IERC20.transferFrom.selector, TEST_ACCOUNT_ADDRESS, TEST_ACCOUNT_ADDRESS, transferAmount)
+            data: abi.encodeWithSelector(
+                IERC20.transferFrom.selector, TEST_ACCOUNT_ADDRESS, TEST_ACCOUNT_ADDRESS, transferAmount
+            )
         });
 
         vm.prank(spender);
@@ -2567,10 +2368,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify spend was NOT tracked (self-to-self transfer is ignored)
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, 0);
@@ -2582,7 +2380,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
@@ -2610,11 +2410,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Mock allowance to return 0 (simulating successful revocation)
         vm.mockCall(
@@ -2635,10 +2431,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify approve amount was tracked as spend
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, approveAmount);
@@ -2650,7 +2443,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
@@ -2678,11 +2473,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Mock allowance to return 0 (simulating successful revocation)
         vm.mockCall(
@@ -2709,7 +2500,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(permit2Spender != address(0));
         vm.assume(allowance > 0);
@@ -2725,38 +2518,31 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Permit2 approve(address token, address spender, uint160 amount, uint48 expiration)
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
             target: PERMIT2,
             value: 0,
-            data: abi.encodeWithSelector(PERMIT2_APPROVE_SELECTOR, address(mockToken), permit2Spender, approveAmount, uint48(block.timestamp + 1 days))
+            data: abi.encodeWithSelector(
+                PERMIT2_APPROVE_SELECTOR,
+                address(mockToken),
+                permit2Spender,
+                approveAmount,
+                uint48(block.timestamp + 1 days)
+            )
         });
 
         vm.prank(spender);
@@ -2773,7 +2559,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(permit2Spender != address(0));
         vm.assume(allowance > 0);
@@ -2789,38 +2577,31 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Permit2 approve call
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
         executeCalls[0] = BaseAccount.Call({
             target: PERMIT2,
             value: 0,
-            data: abi.encodeWithSelector(PERMIT2_APPROVE_SELECTOR, address(mockToken), permit2Spender, approveAmount, uint48(block.timestamp + 1 days))
+            data: abi.encodeWithSelector(
+                PERMIT2_APPROVE_SELECTOR,
+                address(mockToken),
+                permit2Spender,
+                approveAmount,
+                uint48(block.timestamp + 1 days)
+            )
         });
 
         // This should succeed - lockdown is called via executeBatch mock
@@ -2838,7 +2619,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2868,20 +2651,13 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Check that period doesn't exist before execution
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodBefore = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodBefore.start, 0);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
@@ -2905,7 +2681,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -2936,11 +2714,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // First transfer
         BaseAccount.Call[] memory calls1 = new BaseAccount.Call[](1);
@@ -2966,10 +2740,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify spend accumulated
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, firstTransfer + secondTransfer);
@@ -2980,7 +2751,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -3011,11 +2784,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // First transfer
         BaseAccount.Call[] memory calls1 = new BaseAccount.Call[](1);
@@ -3029,10 +2798,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls1);
 
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
 
         // Check spend in first period
@@ -3069,7 +2835,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -3098,11 +2866,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
@@ -3123,7 +2887,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient1 != address(0));
         vm.assume(recipient2 != address(0));
@@ -3156,11 +2922,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         // Multiple calls in one batch
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](2);
@@ -3181,10 +2943,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Verify total spend was tracked
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount1 + transferAmount2);
@@ -3196,7 +2955,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 allowance,
         uint8 periodUnit,
         uint8 multiplier
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
@@ -3225,11 +2986,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Mock the account's executeBatch to succeed
-        vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector),
-            ""
-        );
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
         bytes32 expectedHash = manager.getHash(permission);
 
@@ -3246,4 +3003,5 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls);
     }
+
 }

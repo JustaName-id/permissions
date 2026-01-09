@@ -37,9 +37,7 @@ contract DeployJustaPermissionManager is Script {
     function deployWithSafeSingleton() internal {
         // Deploy manager
         address manager = SafeSingletonDeployer.broadcastDeploy({
-            creationCode: type(JustaPermissionManager).creationCode,
-            args: "",
-            salt: MANAGER_SALT
+            creationCode: type(JustaPermissionManager).creationCode, args: "", salt: MANAGER_SALT
         });
 
         console2.log("Deployed JustaPermissionManager:", manager);

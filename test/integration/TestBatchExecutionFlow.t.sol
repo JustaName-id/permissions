@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Test } from "forge-std/Test.sol";
-import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
-import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
+import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
+import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TestBatchExecutionFlow
@@ -105,21 +105,17 @@ contract TestBatchExecutionFlow is Test, PreparePermission {
 
         vm.prank(spender);
         manager.executeBatch(permission, calls);
-    
+
         assertEq(
             mockToken.balanceOf(TEST_ACCOUNT_ADDRESS),
             accountBalanceBefore - totalAmount,
             "Account balance should decrease by total amount"
         );
         assertEq(
-            mockToken.balanceOf(recipient1),
-            recipient1BalanceBefore + amount1,
-            "Recipient1 should receive amount1"
+            mockToken.balanceOf(recipient1), recipient1BalanceBefore + amount1, "Recipient1 should receive amount1"
         );
         assertEq(
-            mockToken.balanceOf(recipient2),
-            recipient2BalanceBefore + amount2,
-            "Recipient2 should receive amount2"
+            mockToken.balanceOf(recipient2), recipient2BalanceBefore + amount2, "Recipient2 should receive amount2"
         );
     }
 

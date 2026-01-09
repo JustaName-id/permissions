@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Test } from "forge-std/Test.sol";
-import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
-import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
+import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
+import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TestSpendLimitEnforcementFlow
@@ -86,11 +86,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls1);
 
-        assertEq(
-            mockToken.balanceOf(recipient),
-            firstTransfer,
-            "First transfer should succeed"
-        );
+        assertEq(mockToken.balanceOf(recipient), firstTransfer, "First transfer should succeed");
 
         BaseAccount.Call[] memory calls2 = new BaseAccount.Call[](1);
         calls2[0] = BaseAccount.Call({
@@ -102,11 +98,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls2);
 
-        assertEq(
-            mockToken.balanceOf(recipient),
-            firstTransfer + secondTransfer,
-            "Second transfer should succeed"
-        );
+        assertEq(mockToken.balanceOf(recipient), firstTransfer + secondTransfer, "Second transfer should succeed");
 
         BaseAccount.Call[] memory calls3 = new BaseAccount.Call[](1);
         calls3[0] = BaseAccount.Call({
@@ -125,11 +117,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls3);
 
-        assertEq(
-            mockToken.balanceOf(recipient),
-            firstTransfer + secondTransfer,
-            "Third transfer should have reverted"
-        );
+        assertEq(mockToken.balanceOf(recipient), firstTransfer + secondTransfer, "Third transfer should have reverted");
     }
 
 }

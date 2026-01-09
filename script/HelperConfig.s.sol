@@ -79,7 +79,8 @@ abstract contract CodeConstants {
     // EIP-712 TYPEHASHES (mirrored from contract)
     ////////////////////////////////////////////////////////////////////////
 
-    bytes32 public constant CALL_PERMISSION_TYPEHASH = keccak256("CallPermission(address target,bytes4 selector,address checker)");
+    bytes32 public constant CALL_PERMISSION_TYPEHASH =
+        keccak256("CallPermission(address target,bytes4 selector,address checker)");
 
     bytes32 public constant SPEND_LIMIT_TYPEHASH =
         keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");

@@ -18,7 +18,12 @@ contract CallCheckerMock is ICallChecker {
         address,
         uint256,
         bytes calldata
-    ) external view override returns (bool) {
+    )
+        external
+        view
+        override
+        returns (bool)
+    {
         return shouldApprove;
     }
 

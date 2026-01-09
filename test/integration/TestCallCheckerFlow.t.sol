@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Test } from "forge-std/Test.sol";
-import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
-import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
+import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
-import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
+import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
 import { CallCheckerMock } from "test/mocks/CallCheckerMock.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 
 contract TestCallCheckerFlow is Test, PreparePermission {
 
@@ -51,7 +51,9 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         address recipient,
         uint256 transferAmount,
         uint160 allowance
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -71,13 +73,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -120,7 +116,9 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         address recipient,
         uint256 transferAmount,
         uint160 allowance
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -140,13 +138,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -181,7 +173,9 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         address recipient,
         uint256 transferAmount,
         uint160 allowance
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -200,13 +194,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -216,18 +204,13 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         bytes memory callData = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
 
         BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
-        executeCalls[0] = BaseAccount.Call({
-            target: address(mockToken),
-            value: 0,
-            data: callData
-        });
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: callData });
 
         // Expect checker to be called with correct params
         vm.expectCall(
             address(checker),
             abi.encodeCall(
-                checker.canExecute,
-                (permissionHash, TEST_ACCOUNT_ADDRESS, spender, address(mockToken), 0, callData)
+                checker.canExecute, (permissionHash, TEST_ACCOUNT_ADDRESS, spender, address(mockToken), 0, callData)
             )
         );
 
@@ -246,7 +229,9 @@ contract TestCallCheckerFlow is Test, PreparePermission {
     function test_ShouldRevertIfCheckerApprovesButSpendLimitExceeded(
         address spender,
         address recipient
-    ) public {
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -266,13 +251,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -287,9 +266,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
-                transferAmount,
-                allowance
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector, transferAmount, allowance
             )
         );
 
@@ -301,10 +278,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
      * @notice Tests that execution reverts when within spend limit but checker rejects.
      * @dev Transfer amount is within allowance, but checker returns false.
      */
-    function test_ShouldRevertIfWithinSpendLimitButCheckerRejects(
-        address spender,
-        address recipient
-    ) public {
+    function test_ShouldRevertIfWithinSpendLimitButCheckerRejects(address spender, address recipient) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -324,13 +298,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -360,10 +328,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
      * @notice Tests that execution succeeds when both checker approves and within spend limit.
      * @dev Verifies real tokens are transferred when both conditions are met.
      */
-    function test_ShouldSucceedWhenBothCheckerAndSpendLimitPass(
-        address spender,
-        address recipient
-    ) public {
+    function test_ShouldSucceedWhenBothCheckerAndSpendLimitPass(address spender, address recipient) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -383,13 +348,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS,
-            spender,
-            uint48(block.timestamp),
-            uint48(block.timestamp + 1 days),
-            0,
-            calls,
-            spends
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
@@ -422,4 +381,5 @@ contract TestCallCheckerFlow is Test, PreparePermission {
             "Recipient balance should increase by transfer amount"
         );
     }
+
 }
