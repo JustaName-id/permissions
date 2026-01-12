@@ -539,21 +539,27 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             bytes4 selector =
                 calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
-            // Find matching call permission (includes checker if set)
-            (bool isWhitelisted, address checker) = _findMatchingCall(permission, target, selector);
+            // Find all matching call permissions and their checkers
+            (bool isAllowed, address[] memory matchingCheckers) =
+                _findMatchingPermissions(permission, target, selector);
 
-            // Must be whitelisted
-            if (!isWhitelisted) {
+            // Must be allowed by at least one permission entry
+            if (!isAllowed) {
                 revert JustaPermissionManager_UnauthorizedCall(target, selector);
             }
 
-            // If checker is set, it must approve the call
-            if (checker != address(0)) {
-                if (!ICallChecker(checker)
-                        .canExecute(
-                            hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
-                        )) {
-                    revert JustaPermissionManager_CheckerRejectedCall(target, selector, checker);
+            // All checkers must approve the call (AND logic)
+            uint256 checkersLength = matchingCheckers.length;
+            for (uint256 j = 0; j < checkersLength;) {
+                if (
+                    !ICallChecker(matchingCheckers[j]).canExecute(
+                        hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
+                    )
+                ) {
+                    revert JustaPermissionManager_CheckerRejectedCall(target, selector, matchingCheckers[j]);
+                }
+                unchecked {
+                    ++j;
                 }
             }
 
@@ -962,37 +968,62 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     /**
-     * @notice Find a matching call permission and return its checker.
+     * @notice Find all matching call permissions and return their checkers.
      * @dev Wildcard support:
      *      - ANY_TARGET (0x3232...): Allows any target address
      *      - ANY_FN_SEL (0x32323232): Allows any function selector
      *      - EMPTY_CALLDATA_FN_SEL (0xe0e0e0e0): Explicit empty calldata permission
-     * @return matched True if a matching call permission was found.
-     * @return checker The checker address from the matched CallPermission (address(0) if no checker).
+     *
+     *      All matching CallPermissions are collected and their checkers (if non-zero) are returned.
+     *      All returned checkers must approve the call for it to proceed (AND logic).
+     *
+     *      A CallPermission with checker = address(0) means "no additional checker for this rule",
+     *      NOT "exempt from all checkers". Wildcard checkers will still run.
+     *
+     * @return matched True if at least one matching call permission was found.
+     * @return checkers Array of non-zero checker addresses that must all approve the call.
      */
-    function _findMatchingCall(
+    function _findMatchingPermissions(
         Permission calldata permission,
         address target,
         bytes4 selector
     )
         internal
         pure
-        returns (bool matched, address checker)
+        returns (bool matched, address[] memory checkers)
     {
         uint256 callsLength = permission.calls.length;
+
+        checkers = new address[](callsLength);
+        bool hasMatch = false;
+        uint256 idx = 0;
+
         for (uint256 i = 0; i < callsLength;) {
             bool targetMatch = permission.calls[i].target == target || permission.calls[i].target == ANY_TARGET;
             bool selectorMatch = permission.calls[i].selector == selector || permission.calls[i].selector == ANY_FN_SEL;
 
             if (targetMatch && selectorMatch) {
-                return (true, permission.calls[i].checker);
+                hasMatch = true;
+                address checker = permission.calls[i].checker;
+                if (checker != address(0)) {
+                    checkers[idx++] = checker;
+                }
             }
+
             unchecked {
                 ++i;
             }
         }
 
-        return (false, address(0));
+        if (!hasMatch) {
+            return (false, checkers);
+        }
+
+        assembly {
+            mstore(checkers, idx)
+        }
+
+        return (true, checkers);
     }
 
     function _checkAndIncrementSpend(

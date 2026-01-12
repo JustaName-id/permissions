@@ -382,4 +382,116 @@ contract TestCallCheckerFlow is Test, PreparePermission {
         );
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // FLOW 3: MULTIPLE MATCHING CHECKERS (AND LOGIC) - INTEGRATION
+    ////////////////////////////////////////////////////////////////////////
+
+    function test_MultipleCheckers_BothApprove_RealTokenTransfer(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint160 allowance = 100 ether;
+        uint256 transferAmount = 50 ether;
+
+        // Create two separate checker contracts
+        CallCheckerMock specificChecker = new CallCheckerMock();
+        CallCheckerMock wildcardChecker = new CallCheckerMock();
+
+        // Both approve
+        specificChecker.setShouldApprove(true);
+        wildcardChecker.setShouldApprove(true);
+
+        // Specific + wildcard - both match token.transfer
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, address(specificChecker));
+        calls[1] = createCallWithChecker(ANY_TARGET, ANY_FN_SEL, address(wildcardChecker));
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        uint256 accountBalanceBefore = mockToken.balanceOf(TEST_ACCOUNT_ADDRESS);
+        uint256 recipientBalanceBefore = mockToken.balanceOf(recipient);
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+
+        assertEq(
+            mockToken.balanceOf(TEST_ACCOUNT_ADDRESS),
+            accountBalanceBefore - transferAmount,
+            "Account balance should decrease"
+        );
+        assertEq(
+            mockToken.balanceOf(recipient),
+            recipientBalanceBefore + transferAmount,
+            "Recipient balance should increase"
+        );
+    }
+
+    function test_WildcardCannotBeBypassedByNoCheckerSpecific(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint160 allowance = 100 ether;
+        uint256 transferAmount = 50 ether;
+
+        // Global rate limiter that rejects
+        CallCheckerMock rateLimiter = new CallCheckerMock();
+        rateLimiter.setShouldApprove(false);
+
+        // Specific has NO checker, wildcard has rate limiter
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR); // No checker
+        calls[1] = createCallWithChecker(ANY_TARGET, ANY_FN_SEL, address(rateLimiter)); // Global policy
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        // Should revert - wildcard rate limiter cannot be bypassed
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_CheckerRejectedCall.selector,
+                address(mockToken),
+                TRANSFER_SELECTOR,
+                address(rateLimiter)
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
 }

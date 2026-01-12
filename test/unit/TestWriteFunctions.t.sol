@@ -1988,6 +1988,187 @@ contract TestWriteFunctions is Test, PreparePermission {
     }
 
     /*//////////////////////////////////////////////////////////////
+                    MULTIPLE MATCHING CHECKERS (AND LOGIC)
+    //////////////////////////////////////////////////////////////*/
+
+    function test_ExecuteBatch_MultipleMatchingCheckers_BothApprove(
+        address spender,
+        address recipient,
+        address checker1,
+        address checker2,
+        uint160 allowance
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != address(0));
+        vm.assume(checker1 != address(manager));
+        vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker2 != address(0));
+        vm.assume(checker2 != address(manager));
+        vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != checker2);
+        vm.assume(allowance > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        // Two CallPermissions that BOTH match the same call (token.transfer)
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker1); // Specific
+        calls[1] = createCallWithChecker(ANY_TARGET, ANY_FN_SEL, checker2); // Wildcard
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Both checkers approve
+        vm.mockCall(checker1, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
+        vm.mockCall(checker2, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
+
+        // Expect BOTH checkers to be called
+        vm.expectCall(checker1, abi.encodeWithSelector(ICallChecker.canExecute.selector));
+        vm.expectCall(checker2, abi.encodeWithSelector(ICallChecker.canExecute.selector));
+
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_MultipleMatchingCheckers_AnyRejectsReverts(
+        address spender,
+        address recipient,
+        address checker1,
+        address checker2,
+        uint160 allowance
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != address(0));
+        vm.assume(checker1 != address(manager));
+        vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker2 != address(0));
+        vm.assume(checker2 != address(manager));
+        vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != checker2);
+        vm.assume(allowance > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        // Two CallPermissions that BOTH match the same call
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker1); // Specific
+        calls[1] = createCallWithChecker(ANY_TARGET, ANY_FN_SEL, checker2); // Wildcard
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // First checker approves, second checker REJECTS
+        vm.mockCall(checker1, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
+        vm.mockCall(checker2, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(false));
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        // Should revert because checker2 rejects
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_CheckerRejectedCall.selector,
+                address(mockToken),
+                TRANSFER_SELECTOR,
+                checker2
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    function test_ExecuteBatch_WildcardCheckerRunsWhenSpecificHasNoChecker(
+        address spender,
+        address recipient,
+        address wildcardChecker,
+        uint160 allowance
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+        vm.assume(wildcardChecker != address(0));
+        vm.assume(wildcardChecker != address(manager));
+        vm.assume(wildcardChecker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(allowance > 0);
+
+        uint160 transferAmount = allowance / 2;
+        vm.assume(transferAmount > 0);
+
+        // Specific with NO checker, wildcard WITH checker
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](2);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR); // Specific - address(0) checker
+        calls[1] = createCallWithChecker(ANY_TARGET, ANY_FN_SEL, wildcardChecker); // Wildcard with checker
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Wildcard checker approves
+        vm.mockCall(wildcardChecker, abi.encodeWithSelector(ICallChecker.canExecute.selector), abi.encode(true));
+
+        // Expect wildcard checker to be called
+        vm.expectCall(wildcardChecker, abi.encodeWithSelector(ICallChecker.canExecute.selector));
+
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+        executeCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, executeCalls);
+    }
+
+    /*//////////////////////////////////////////////////////////////
                         SPEND LIMIT ERRORS
     //////////////////////////////////////////////////////////////*/
 
