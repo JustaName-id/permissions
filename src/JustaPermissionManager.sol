@@ -183,6 +183,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     error JustaPermissionManager_CheckerRejectedCall(address target, bytes4 selector, address checker);
 
+    /**
+     * @notice Thrown when a checker address has no deployed code.
+     * @param checker The checker address with no code.
+     */
+    error JustaPermissionManager_CheckerHasNoCode(address checker);
+
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
     ////////////////////////////////////////////////////////////////////////
@@ -390,6 +396,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             }
             if (permission.calls[i].checker == permission.account) {
                 revert JustaPermissionManager_CannotTargetAccount();
+            }
+
+            if (permission.calls[i].checker != address(0) && permission.calls[i].checker.code.length == 0) {
+                revert JustaPermissionManager_CheckerHasNoCode(permission.calls[i].checker);
             }
 
             unchecked {

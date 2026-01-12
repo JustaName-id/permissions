@@ -676,6 +676,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         // Checker can be address(0) or any valid address except manager and account
         vm.assume(checker != address(manager));
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        if (checker != address(0)) {
+            vm.assume(uint160(checker) > 0xff); // Exclude precompiles
+        }
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
         calls[0] = createCallWithChecker(address(mockToken), selector, checker);
@@ -688,6 +691,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker address if non-zero
+        if (checker != address(0)) {
+            vm.etch(checker, hex"00");
+        }
 
         bytes32 expectedHash = manager.getHash(permission);
 
@@ -762,6 +770,49 @@ contract TestWriteFunctions is Test, PreparePermission {
         );
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_CannotTargetAccount.selector);
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+    }
+
+    function test_Approve_RevertIfCheckerHasNoCode(
+        address spender,
+        address eoaChecker,
+        bytes4 selector,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(selector != bytes4(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+        // Ensure eoaChecker is not a contract (no code) and not special addresses
+        vm.assume(eoaChecker != address(0));
+        vm.assume(eoaChecker != address(manager));
+        vm.assume(eoaChecker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(eoaChecker.code.length == 0);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCallWithChecker(address(mockToken), selector, eoaChecker);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_CheckerHasNoCode.selector, eoaChecker
+            )
+        );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -1623,6 +1674,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != address(0));
         vm.assume(checker != address(manager));
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
         vm.assume(multiplier > 0);
@@ -1641,6 +1693,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker address
+        vm.etch(checker, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -1679,6 +1734,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != address(0));
         vm.assume(checker != address(manager));
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
         vm.assume(multiplier > 0);
@@ -1697,6 +1753,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker address
+        vm.etch(checker, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -1740,6 +1799,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != address(0));
         vm.assume(checker != address(manager));
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
         vm.assume(periodUnit <= 6);
         vm.assume(multiplier > 0);
@@ -1760,6 +1820,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker address
+        vm.etch(checker, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -1861,9 +1924,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker1 != address(0));
         vm.assume(checker1 != address(manager));
         vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker1) > 0xff); // Exclude precompiles
         vm.assume(checker2 != address(0));
         vm.assume(checker2 != address(manager));
         vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
         vm.assume(checker1 != checker2);
         vm.assume(allowance > 10);
         vm.assume(periodUnit <= 6);
@@ -1885,6 +1950,10 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker addresses
+        vm.etch(checker1, hex"00");
+        vm.etch(checker2, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -1940,6 +2009,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != address(0));
         vm.assume(checker != address(manager));
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 10);
         vm.assume(periodUnit <= 6);
         vm.assume(multiplier > 0);
@@ -1960,6 +2030,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker address
+        vm.etch(checker, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -2010,6 +2083,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker2 != address(manager));
         vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
         vm.assume(checker1 != checker2);
+        vm.assume(uint160(checker1) > 0xff); // Exclude precompiles
+        vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2026,6 +2101,10 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker addresses
+        vm.etch(checker1, hex"00");
+        vm.etch(checker2, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -2070,6 +2149,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker2 != address(manager));
         vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
         vm.assume(checker1 != checker2);
+        vm.assume(uint160(checker1) > 0xff); // Exclude precompiles
+        vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2086,6 +2167,10 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at checker addresses
+        vm.etch(checker1, hex"00");
+        vm.etch(checker2, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -2129,6 +2214,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(wildcardChecker != address(0));
         vm.assume(wildcardChecker != address(manager));
         vm.assume(wildcardChecker != TEST_ACCOUNT_ADDRESS);
+        vm.assume(uint160(wildcardChecker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2145,6 +2231,9 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
+
+        // Deploy code at wildcard checker address
+        vm.etch(wildcardChecker, hex"00");
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
