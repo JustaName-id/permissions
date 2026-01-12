@@ -438,9 +438,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
             "Account balance should decrease"
         );
         assertEq(
-            mockToken.balanceOf(recipient),
-            recipientBalanceBefore + transferAmount,
-            "Recipient balance should increase"
+            mockToken.balanceOf(recipient), recipientBalanceBefore + transferAmount, "Recipient balance should increase"
         );
     }
 

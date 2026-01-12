@@ -550,8 +550,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
             // Find all matching call permissions and their checkers
-            (bool isAllowed, address[] memory matchingCheckers) =
-                _findMatchingPermissions(permission, target, selector);
+            (bool isAllowed, address[] memory matchingCheckers) = _findMatchingPermissions(permission, target, selector);
 
             // Must be allowed by at least one permission entry
             if (!isAllowed) {
@@ -561,11 +560,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // All checkers must approve the call (AND logic)
             uint256 checkersLength = matchingCheckers.length;
             for (uint256 j = 0; j < checkersLength;) {
-                if (
-                    !ICallChecker(matchingCheckers[j]).canExecute(
-                        hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
-                    )
-                ) {
+                if (!ICallChecker(matchingCheckers[j])
+                        .canExecute(
+                            hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
+                        )) {
                     revert JustaPermissionManager_CheckerRejectedCall(target, selector, matchingCheckers[j]);
                 }
                 unchecked {

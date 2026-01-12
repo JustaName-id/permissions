@@ -809,9 +809,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_CheckerHasNoCode.selector, eoaChecker
-            )
+            abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_CheckerHasNoCode.selector, eoaChecker)
         );
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
