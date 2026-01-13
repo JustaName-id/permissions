@@ -154,7 +154,7 @@ address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
 ## Key Functions
 
-### Admin Functions
+### Account Owner Functions
 
 - `approve(Permission calldata permission)`: Approve a permission with full validation. Validates time bounds, call permissions, spend limits, and prevents privilege escalation. Caller must be the account owner.
 - `revoke(Permission calldata permission)`: Revoke a permission by the account owner.
@@ -241,22 +241,10 @@ JustaPermissionManager acts as an owner of JustanAccount instances:
 5. Spender calls `executeBatch(permission, calls)`
 6. Revoke when no longer needed
 
-## Supported Chains
-
-- Ethereum Mainnet + Sepolia
-- Base Mainnet + Sepolia
-- Optimism Mainnet + Sepolia
-- Arbitrum One + Sepolia
-- Polygon + Amoy
-- Scroll Mainnet + Sepolia
-- Unichain Mainnet + Sepolia
-- Gnosis + Chiado
-
 ## Influences & Acknowledgments
 
 This implementation was influenced by and builds upon:
 
-- **[Coinbase Spend Permissions](https://github.com/coinbase/spend-permissions)**: The spend limit architecture and period-based tracking patterns were inspired by Coinbase's implementation.
 - **[JustanAccount](https://github.com/justaname-id/justanaccount)**: The target smart account contract that JustaPermissionManager delegates to.
 - **[Solady](https://github.com/Vectorized/solady)**: Optimized utility libraries including DateTimeLib, DynamicArrayLib, SafeTransferLib, and ReentrancyGuard.
 - **[OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)**: Standard implementations for EIP-712, SafeERC20, and ERC165Checker.
