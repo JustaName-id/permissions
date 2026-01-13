@@ -23,6 +23,8 @@ import { SafeTransferLib } from "solady/utils/SafeTransferLib.sol";
 
 import { IAllowanceTransfer } from "@permit2/src/interfaces/IAllowanceTransfer.sol";
 
+import { ICallChecker } from "./interfaces/ICallChecker.sol";
+
 /**
  * @title JustaPermissionManager
  *
@@ -173,6 +175,20 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     error JustaPermissionManager_ZeroMultiplier();
 
+    /**
+     * @notice Thrown when a call checker rejects the execution.
+     * @param target The target contract address.
+     * @param selector The function selector.
+     * @param checker The checker contract that rejected the call.
+     */
+    error JustaPermissionManager_CheckerRejectedCall(address target, bytes4 selector, address checker);
+
+    /**
+     * @notice Thrown when a checker address has no deployed code.
+     * @param checker The checker address with no code.
+     */
+    error JustaPermissionManager_CheckerHasNoCode(address checker);
+
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
     ////////////////////////////////////////////////////////////////////////
@@ -197,10 +213,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     /**
      * @notice A call permission allowing execution of specific functions.
+     * @dev The optional checker field allows attaching validation logic to specific calls.
+     *      When checker is address(0), the call is allowed if it matches the whitelist.
+     *      When checker is set, the checker.canExecute() must return true.
      */
     struct CallPermission {
         address target;
         bytes4 selector;
+        address checker;
     }
 
     /**
@@ -271,13 +291,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     /**
      * @notice EIP-712 typehashes
      */
-    bytes32 public constant CALL_PERMISSION_TYPEHASH = keccak256("CallPermission(address target,bytes4 selector)");
+    bytes32 public constant CALL_PERMISSION_TYPEHASH =
+        keccak256("CallPermission(address target,bytes4 selector,address checker)");
 
     bytes32 public constant SPEND_LIMIT_TYPEHASH =
         keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
-        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
+        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector,address checker)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
     );
 
     ////////////////////////////////////////////////////////////////////////
@@ -367,6 +388,20 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             if (permission.calls[i].selector == bytes4(0)) {
                 revert JustaPermissionManager_ZeroSelector();
             }
+
+            // Validate checker (address(0) is allowed - means no checker)
+            // Prevent checker being self or account (would fail at runtime anyway)
+            if (permission.calls[i].checker == address(this)) {
+                revert JustaPermissionManager_CannotTargetSelf();
+            }
+            if (permission.calls[i].checker == permission.account) {
+                revert JustaPermissionManager_CannotTargetAccount();
+            }
+
+            if (permission.calls[i].checker != address(0) && permission.calls[i].checker.code.length == 0) {
+                revert JustaPermissionManager_CheckerHasNoCode(permission.calls[i].checker);
+            }
+
             unchecked {
                 ++i;
             }
@@ -490,17 +525,23 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         _checkPermissionTimeBounds(permission.start, permission.end);
 
         // ============================================================
-        // STEP 1: CHECK EXECUTION PERMISSIONS (FIRST - FAIL FAST)
+        // STEP 1: CHECK EXECUTION PERMISSIONS + CHECKERS (FAIL FAST)
+        // ============================================================
+        // Authorization flow:
+        // 1. Call must match an entry in permission.calls[] (whitelist)
+        // 2. If the matched entry has a checker, checker.canExecute() must return true
         // ============================================================
         uint256 callsLength = calls.length;
         for (uint256 i = 0; i < callsLength;) {
+            address target = calls[i].target;
+
             // Prevent targeting self (privilege escalation)
-            if (calls[i].target == address(this)) {
+            if (target == address(this)) {
                 revert JustaPermissionManager_CannotTargetSelf();
             }
 
             // Prevent targeting the account (privilege escalation)
-            if (calls[i].target == permission.account) {
+            if (target == permission.account) {
                 revert JustaPermissionManager_CannotTargetAccount();
             }
 
@@ -508,10 +549,28 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             bytes4 selector =
                 calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
-            // Check if this call is authorized
-            if (!_isCallAuthorized(permission, calls[i].target, selector)) {
-                revert JustaPermissionManager_UnauthorizedCall(calls[i].target, selector);
+            // Find all matching call permissions and their checkers
+            (bool isAllowed, address[] memory matchingCheckers) = _findMatchingPermissions(permission, target, selector);
+
+            // Must be allowed by at least one permission entry
+            if (!isAllowed) {
+                revert JustaPermissionManager_UnauthorizedCall(target, selector);
             }
+
+            // All checkers must approve the call (AND logic)
+            uint256 checkersLength = matchingCheckers.length;
+            for (uint256 j = 0; j < checkersLength;) {
+                if (!ICallChecker(matchingCheckers[j])
+                        .canExecute(
+                            hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
+                        )) {
+                    revert JustaPermissionManager_CheckerRejectedCall(target, selector, matchingCheckers[j]);
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+
             unchecked {
                 ++i;
             }
@@ -786,10 +845,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         );
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // INTERNAL HELPERS
-    ////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Rounds the unix timestamp down to the period start.
      * @dev Aligns periods to calendar boundaries to prevent gaming.
@@ -865,6 +920,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         revert(); // We shouldn't hit here.
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // INTERNAL HELPERS
+    ////////////////////////////////////////////////////////////////////////
+
     /**
      * @notice Get the duration of a spend period in seconds.
      * @dev For fixed units (Minute, Hour, Day), returns baseDuration * multiplier.
@@ -917,35 +976,62 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     /**
-     * @notice Check if a call is authorized, supporting wildcards.
+     * @notice Find all matching call permissions and return their checkers.
      * @dev Wildcard support:
      *      - ANY_TARGET (0x3232...): Allows any target address
      *      - ANY_FN_SEL (0x32323232): Allows any function selector
      *      - EMPTY_CALLDATA_FN_SEL (0xe0e0e0e0): Explicit empty calldata permission
+     *
+     *      All matching CallPermissions are collected and their checkers (if non-zero) are returned.
+     *      All returned checkers must approve the call for it to proceed (AND logic).
+     *
+     *      A CallPermission with checker = address(0) means "no additional checker for this rule",
+     *      NOT "exempt from all checkers". Wildcard checkers will still run.
+     *
+     * @return matched True if at least one matching call permission was found.
+     * @return checkers Array of non-zero checker addresses that must all approve the call.
      */
-    function _isCallAuthorized(
+    function _findMatchingPermissions(
         Permission calldata permission,
         address target,
         bytes4 selector
     )
         internal
         pure
-        returns (bool)
+        returns (bool matched, address[] memory checkers)
     {
         uint256 callsLength = permission.calls.length;
+
+        checkers = new address[](callsLength);
+        bool hasMatch = false;
+        uint256 idx = 0;
+
         for (uint256 i = 0; i < callsLength;) {
             bool targetMatch = permission.calls[i].target == target || permission.calls[i].target == ANY_TARGET;
             bool selectorMatch = permission.calls[i].selector == selector || permission.calls[i].selector == ANY_FN_SEL;
 
             if (targetMatch && selectorMatch) {
-                return true;
+                hasMatch = true;
+                address checker = permission.calls[i].checker;
+                if (checker != address(0)) {
+                    checkers[idx++] = checker;
+                }
             }
+
             unchecked {
                 ++i;
             }
         }
 
-        return false;
+        if (!hasMatch) {
+            return (false, checkers);
+        }
+
+        assembly {
+            mstore(checkers, idx)
+        }
+
+        return (true, checkers);
     }
 
     function _checkAndIncrementSpend(
@@ -1139,7 +1225,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     function _hashCallPermission(CallPermission calldata call) internal pure returns (bytes32) {
-        return keccak256(abi.encode(CALL_PERMISSION_TYPEHASH, call.target, call.selector));
+        return keccak256(abi.encode(CALL_PERMISSION_TYPEHASH, call.target, call.selector, call.checker));
     }
 
     function _hashSpendLimit(SpendLimit calldata spendLimit) internal pure returns (bytes32) {

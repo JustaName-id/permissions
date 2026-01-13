@@ -6,6 +6,7 @@ import { EntryPoint } from "@account-abstraction/core/EntryPoint.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
+import { CodeConstants } from "script/HelperConfig.s.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";

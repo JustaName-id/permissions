@@ -1,7 +1,251 @@
 # JustaPermissionManager
 
-Delegation layer for JustanAccount enabling granular permissions with time-bound call execution and spending.
+**CAUTION: These contracts are not yet audited. Use with caution.**
+
+## Temporary Deployment Addresses
+
+- **JustaPermissionManager**: `0x914d7fec6aac8cd542e72bca78b30650d45643d7`
+
+**Deployed on:**
+
+- Base Sepolia
 
 ## Overview
 
-JustaPermissionManager acts as an owner of [JustanAccount](https://github.com/justaname-id/justanaccount) smart accounts, providing fine-grained access control through delegated permissions. Account owners can grant time-limited permissions to "spenders" (delegated addresses) to execute specific actions on their behalf.
+`JustaPermissionManager` is a Solidity smart contract that provides a delegation layer for [JustanAccount](https://github.com/justaname-id/justanaccount) smart accounts. It enables granular access control through delegated permissions, allowing account owners to grant time-limited permissions to "spenders" (delegated addresses) to execute specific actions on their behalf with fine-grained call authorization and spending limits.
+
+## Features
+
+- **Time-Bound Permissions**: Enforce temporal access control with start/end timestamps. Supports future-dated permissions and time-limited delegation.
+- **Call Authorization**: Whitelist-based call permissions specifying exact (target, selector) pairs with wildcard support for flexible policies.
+- **Call Checkers**: Optional external validators that receive full calldata for parameter validation, enabling sophisticated authorization logic.
+- **Flexible Spend Limits**: Per-token spending limits with multiple period types (Minute, Hour, Day, Week, Month, Year, Forever) and multipliers for extended periods.
+- **Multiple Limits Per Token**: Support simultaneous period-based limits (e.g., hourly AND daily limits on the same token).
+- **Native Token Support**: ERC-7528 convention for ETH spending limits using the `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE` address.
+- **ERC20 Protection**: Automatic approval revocation after execution prevents malicious contracts from leaving backdoor approvals.
+- **Permit2 Integration**: Support for Uniswap's Permit2 token approval standard with automatic lockdown after execution.
+- **Conservative Spend Tracking**: Uses `max(calldata_amounts, balance_delta)` to prevent gaming through flash loans or state manipulation.
+- **EIP-712 Signatures**: Typed structured data hashing for secure off-chain signing and verification.
+- **Reentrancy Protection**: Guards against reentrancy attacks on all state-modifying functions.
+
+## Architecture
+
+The contract system consists of two main components:
+
+### JustaPermissionManager (Main Contract)
+
+The primary permission management contract that inherits from:
+
+- EIP712 (OpenZeppelin's EIP-712 implementation)
+- ReentrancyGuard (Solady's reentrancy protection)
+
+#### Key Libraries Used
+
+- `SafeERC20` - Safe ERC20 token transfers
+- `ERC165Checker` - Token type detection (ERC721/ERC1155 rejection)
+- `DateTimeLib` (Solady) - Calendar period calculations
+- `DynamicArrayLib` (Solady) - Dynamic array management
+- `LibSort` (Solady) - Sorting utilities
+- `LibBytes` (Solady) - Byte manipulation
+- `SafeTransferLib` (Solady) - Token transfer helpers
+
+### ICallChecker (Interface)
+
+An interface for external call validators:
+
+```solidity
+interface ICallChecker {
+    function canExecute(
+        bytes32 permissionHash,
+        address account,
+        address spender,
+        address target,
+        uint256 value,
+        bytes calldata data
+    ) external view returns (bool);
+}
+```
+
+## Data Structures
+
+### Permission
+
+Complete delegated permission with time bounds:
+
+```solidity
+struct Permission {
+    address account;          // Account owner
+    address spender;          // Delegated spender
+    uint48 start;             // Permission valid start time
+    uint48 end;               // Permission valid end time
+    uint256 salt;             // Unique salt for differentiation
+    CallPermission[] calls;   // Array of call permissions
+    SpendLimit[] spends;      // Array of spend limits
+}
+```
+
+### CallPermission
+
+Specifies allowed function calls with optional validation:
+
+```solidity
+struct CallPermission {
+    address target;      // Contract address (or ANY_TARGET wildcard)
+    bytes4 selector;     // Function selector (or ANY_FN_SEL wildcard)
+    address checker;     // Optional call validator (address(0) = no checker)
+}
+```
+
+### SpendLimit
+
+Recurring spending allowance with flexible periods:
+
+```solidity
+struct SpendLimit {
+    address token;           // Token to limit (or NATIVE_TOKEN)
+    uint160 allowance;       // Max spend per period
+    PeriodUnit unit;         // Period type (Minute-Year or Forever)
+    uint8 multiplier;        // Period multiplier (1-255)
+}
+```
+
+### PeriodUnit
+
+```solidity
+enum PeriodUnit {
+    Minute,     // 60 seconds
+    Hour,       // 3600 seconds
+    Day,        // 86400 seconds
+    Week,       // 604800 seconds (Monday-aligned)
+    Month,      // Calendar month (aligned to 1st)
+    Year,       // Calendar year (aligned to Jan 1st)
+    Forever     // One-time allowance for entire permission
+}
+```
+
+### PeriodSpend
+
+Spend tracking for current period:
+
+```solidity
+struct PeriodSpend {
+    uint48 start;         // Period start timestamp
+    uint48 end;           // Period end timestamp
+    uint160 spend;        // Cumulative spend in this period
+}
+```
+
+## Constants
+
+### Wildcard Constants
+
+```solidity
+address public constant ANY_TARGET = 0x3232323232323232323232323232323232323232;
+bytes4 public constant ANY_FN_SEL = 0x32323232;
+bytes4 public constant EMPTY_CALLDATA_FN_SEL = 0xe0e0e0e0;
+```
+
+### Token Constants
+
+```solidity
+address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+```
+
+## Key Functions
+
+### Account Owner Functions
+
+- `approve(Permission calldata permission)`: Approve a permission with full validation. Validates time bounds, call permissions, spend limits, and prevents privilege escalation. Caller must be the account owner.
+- `revoke(Permission calldata permission)`: Revoke a permission by the account owner.
+- `revokeAsSpender(Permission calldata permission)`: Revoke a permission by the spender.
+
+### Execution Functions
+
+- `executeBatch(Permission calldata permission, BaseAccount.Call[] calldata calls)`: Execute multiple calls with permission validation. The 8-step process includes:
+  1. Check permission approved and not revoked
+  2. Validate time bounds
+  3. Check call authorization and run checkers (fail-fast)
+  4. Setup spend tracking (collect ERC20s, parse calldata)
+  5. Record ERC20 balances before execution
+  6. Execute all calls via JustanAccount
+  7. Revoke ERC20 and Permit2 approvals (security critical)
+  8. Check spend limits using max(calldata_sum, balance_delta)
+
+### View Functions
+
+- `isApproved(bytes32 permissionHash)`: Check if permission is approved.
+- `isRevoked(bytes32 permissionHash)`: Check if permission is revoked.
+- `getLastUpdatedPeriod(bytes32 permissionHash, bytes32 spendLimitHash)`: Get last updated spend period info.
+- `getCurrentPeriod(SpendLimit calldata spendLimit, uint48 permissionStart, uint48 permissionEnd)`: Calculate current spend period.
+- `getHash(Permission calldata permission)`: Calculate EIP-712 permission hash.
+- `startOfSpendPeriod(uint48 timestamp, PeriodUnit unit, uint8 multiplier)`: Get period start for given timestamp with calendar alignment.
+
+## Security Model
+
+### Privilege Escalation Prevention
+
+- Cannot target the PermissionManager contract itself
+- Cannot target the account being delegated from
+- Prevents spenders from granting themselves additional permissions
+
+### Approval Revocation Safety
+
+- Hard failures if ERC20 approval revocation doesn't complete
+- Automatic Permit2 lockdown after execution
+- Ensures no leftover approvals that could be exploited
+
+### Call Checker Validation
+
+- Checkers must have deployed code (no EOA checkers)
+- All matching checkers must approve (AND logic)
+- Fail-fast on first rejection
+
+### Spend Tracking
+
+- Conservative approach using max of calldata amounts and balance deltas
+- Calendar-aligned periods prevent timing attacks
+- Handles first period specially when permission starts mid-period
+
+## Storage Layout
+
+```solidity
+// Permission approval tracking
+mapping(bytes32 permissionHash => bool approved) internal _isApproved;
+
+// Permission revocation tracking
+mapping(bytes32 permissionHash => bool revoked) internal _isRevoked;
+
+// Spend limit period tracking
+mapping(bytes32 permissionHash => mapping(bytes32 spendLimitHash => PeriodSpend))
+    internal _lastUpdatedPeriod;
+```
+
+## Events
+
+```solidity
+event PermissionApproved(bytes32 indexed permissionHash, Permission permission);
+event PermissionRevoked(bytes32 indexed permissionHash);
+event CallsExecuted(bytes32 indexed permissionHash);
+event SpendLimitUsed(bytes32 indexed permissionHash, address indexed token, PeriodSpend periodSpend);
+```
+
+## Integration with JustanAccount
+
+JustaPermissionManager acts as an owner of JustanAccount instances:
+
+1. Deploy a JustanAccount instance
+2. Add JustaPermissionManager as an owner via `addOwnerAddress()`
+3. Create a Permission struct with calls and spends
+4. Account owner calls `approve(permission)`
+5. Spender calls `executeBatch(permission, calls)`
+6. Revoke when no longer needed
+
+## Influences & Acknowledgments
+
+This implementation was influenced by and builds upon:
+
+- **[JustanAccount](https://github.com/justaname-id/justanaccount)**: The target smart account contract that JustaPermissionManager delegates to.
+- **[Solady](https://github.com/Vectorized/solady)**: Optimized utility libraries including DateTimeLib, DynamicArrayLib, SafeTransferLib, and ReentrancyGuard.
+- **[OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts)**: Standard implementations for EIP-712, SafeERC20, and ERC165Checker.
+- **[Uniswap Permit2](https://github.com/Uniswap/permit2)**: Token approval standard integration for enhanced security.
