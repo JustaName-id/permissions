@@ -569,11 +569,7 @@ contract TestWriteFunctions is Test, PreparePermission {
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector, address(mockToken)
-            )
-        );
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector);
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
@@ -2077,9 +2073,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker1 != address(0));
         vm.assume(checker1 != address(manager));
         vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != address(vm)); // Exclude Foundry VM
         vm.assume(checker2 != address(0));
         vm.assume(checker2 != address(manager));
         vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker2 != address(vm)); // Exclude Foundry VM
         vm.assume(checker1 != checker2);
         vm.assume(uint160(checker1) > 0xff); // Exclude precompiles
         vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
@@ -2143,9 +2141,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker1 != address(0));
         vm.assume(checker1 != address(manager));
         vm.assume(checker1 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker1 != address(vm)); // Exclude Foundry VM
         vm.assume(checker2 != address(0));
         vm.assume(checker2 != address(manager));
         vm.assume(checker2 != TEST_ACCOUNT_ADDRESS);
+        vm.assume(checker2 != address(vm)); // Exclude Foundry VM
         vm.assume(checker1 != checker2);
         vm.assume(uint160(checker1) > 0xff); // Exclude precompiles
         vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
@@ -2668,7 +2668,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         assertEq(periodSpend.spend, transferAmount);
     }
 
-    function test_ExecuteBatch_ShouldNotTrackSelfToSelfTransfer(
+    function test_ExecuteBatch_ShouldTrackSelfToSelfTransfer(
         address spender,
         uint160 allowance,
         uint8 periodUnit,
@@ -2704,7 +2704,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         // Mock the account's executeBatch to succeed
         vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
-        // transferFrom where account transfers to itself (should not be tracked)
+        // transferFrom where account transfers to itself
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
         calls[0] = BaseAccount.Call({
             target: address(mockToken),
@@ -2717,12 +2717,12 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls);
 
-        // Verify spend was NOT tracked (self-to-self transfer is ignored)
+        // Verify spend IS tracked
         JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
             address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
         );
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
-        assertEq(periodSpend.spend, 0);
+        assertEq(periodSpend.spend, transferAmount);
     }
 
     function test_ExecuteBatch_ShouldTrackERC20Approve(

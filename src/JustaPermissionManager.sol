@@ -138,10 +138,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     error JustaPermissionManager_ZeroSelector();
 
     /**
-     * @notice Thrown when duplicate spend limits are configured for the same token with identical parameters.
-     * @param token The token address with duplicate spend limit configuration.
+     * @notice Thrown when duplicate spend limits are configured with identical parameters.
      */
-    error JustaPermissionManager_DuplicateSpendLimit(address token);
+    error JustaPermissionManager_DuplicateSpendLimit();
 
     /**
      * @notice Thrown when attempting to spend a token that has no configured spend permissions.
@@ -346,7 +345,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     /**
      * @notice Approve a permission with call and spend limits.
-     * @dev Both calls and spends MUST be configured together.
+     * @dev Permissions require at least one call permission. Spend limits are optional but strongly recommended.
+     *      If the spends array is empty, any operation that moves tokens (ERC20 transfers, approvals) or
+     *      native ETH will revert with `JustaPermissionManager_NoSpendPermissions`. This is by design to
+     *      prevent untracked token outflows. To allow token/ETH operations, configure appropriate spend limits.
      * @param permission The complete permission with calls and spends arrays.
      * @return True if approved successfully.
      */
@@ -449,7 +451,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             LibSort.sort(spendHashes);
             for (uint256 i = 1; i < spendsLength;) {
                 if (spendHashes[i] == spendHashes[i - 1]) {
-                    revert JustaPermissionManager_DuplicateSpendLimit(permission.spends[i].token);
+                    revert JustaPermissionManager_DuplicateSpendLimit();
                 }
                 unchecked {
                     ++i;
@@ -626,11 +628,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // to transfer from the permission account, treat it as outflow.
             if (fnSel == 0x23b872dd) {
                 address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
-                address to = LibBytes.loadCalldata(data, 0x24).lsbToAddress();
-                // Skip if this is a self-to-self transfer
-                if (from == permission.account && to == permission.account) {
-                    continue;
-                }
                 if (LibBytes.loadCalldata(data, 0x44) == 0) {
                     continue;
                 } // `amount == 0`
@@ -1127,7 +1124,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         PeriodSpend memory lastUpdatedPeriod = _lastUpdatedPeriod[hash][spendLimitHash];
 
-        bool lastPeriodExists = lastUpdatedPeriod.start != 0;
+        bool lastPeriodExists = lastUpdatedPeriod.end != 0;
         bool lastPeriodStillActive = currentTimestamp <= lastUpdatedPeriod.end;
 
         if (lastPeriodExists && lastPeriodStillActive) {
