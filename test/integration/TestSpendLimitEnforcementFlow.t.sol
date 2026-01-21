@@ -120,4 +120,76 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         assertEq(mockToken.balanceOf(recipient), firstTransfer + secondTransfer, "Third transfer should have reverted");
     }
 
+    /**
+     * @notice Tests that spend limits are enforced when permission.start == 0 with Forever period.
+     */
+    function test_ShouldEnforceSpendLimitWithStartZeroAndForeverPeriod(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint160 allowance = 100 ether;
+        uint256 firstTransfer = 60 ether;
+        uint256 secondTransfer = 50 ether;
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(
+            address(mockToken),
+            allowance,
+            JustaPermissionManager.PeriodUnit.Forever,
+            1
+        );
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            0, // start = 0
+            uint48(block.timestamp + 365 days),
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // First transfer: 60 ether (60/100)
+        BaseAccount.Call[] memory calls1 = new BaseAccount.Call[](1);
+        calls1[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, firstTransfer)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls1);
+        assertEq(mockToken.balanceOf(recipient), firstTransfer, "First transfer should succeed");
+
+        // Second transfer: 50 ether - should revert (110 > 100)
+        BaseAccount.Call[] memory calls2 = new BaseAccount.Call[](1);
+        calls2[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, secondTransfer)
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_ExceededSpendLimit.selector,
+                firstTransfer + secondTransfer,
+                allowance
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls2);
+
+        assertEq(mockToken.balanceOf(recipient), firstTransfer, "Second transfer should have reverted");
+    }
+
 }

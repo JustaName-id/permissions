@@ -1127,7 +1127,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
         PeriodSpend memory lastUpdatedPeriod = _lastUpdatedPeriod[hash][spendLimitHash];
 
-        bool lastPeriodExists = lastUpdatedPeriod.start != 0;
+        bool lastPeriodExists = lastUpdatedPeriod.end != 0;
         bool lastPeriodStillActive = currentTimestamp <= lastUpdatedPeriod.end;
 
         if (lastPeriodExists && lastPeriodStillActive) {
