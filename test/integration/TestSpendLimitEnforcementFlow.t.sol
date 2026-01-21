@@ -123,7 +123,12 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
     /**
      * @notice Tests that spend limits are enforced when permission.start == 0 with Forever period.
      */
-    function test_ShouldEnforceSpendLimitWithStartZeroAndForeverPeriod(address spender, address recipient) public {
+    function test_ShouldEnforceSpendLimitWithStartZeroAndForeverPeriod(
+        address spender,
+        address recipient
+    )
+        public
+    {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -138,12 +143,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken),
-            allowance,
-            JustaPermissionManager.PeriodUnit.Forever,
-            1
-        );
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS,
@@ -270,11 +270,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         manager.approve(permission);
 
         BaseAccount.Call[] memory ethCalls = new BaseAccount.Call[](1);
-        ethCalls[0] = BaseAccount.Call({
-            target: recipient,
-            value: 1 ether,
-            data: ""
-        });
+        ethCalls[0] = BaseAccount.Call({ target: recipient, value: 1 ether, data: "" });
 
         vm.expectRevert(JustaPermissionManager.JustaPermissionManager_NoSpendPermissions.selector);
 
