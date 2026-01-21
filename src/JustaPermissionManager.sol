@@ -346,7 +346,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
     /**
      * @notice Approve a permission with call and spend limits.
-     * @dev Both calls and spends MUST be configured together.
+     * @dev Permissions require at least one call permission. Spend limits are optional but strongly recommended.
+     *      If the spends array is empty, any operation that moves tokens (ERC20 transfers, approvals) or
+     *      native ETH will revert with `JustaPermissionManager_NoSpendPermissions`. This is by design to
+     *      prevent untracked token outflows. To allow token/ETH operations, configure appropriate spend limits.
      * @param permission The complete permission with calls and spends arrays.
      * @return True if approved successfully.
      */

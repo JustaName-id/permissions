@@ -207,6 +207,18 @@ address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 - Calendar-aligned periods prevent timing attacks
 - Handles first period specially when permission starts mid-period
 
+### Empty Spend Limits Behavior
+
+Permissions with an empty `spends` array will cause **all token and ETH transfer operations to revert** with `JustaPermissionManager_NoSpendPermissions`. This is intentional behavior to prevent untracked token outflows:
+
+- **ERC20 transfers** (`transfer`, `transferFrom`, `approve`): Will revert
+- **Native ETH transfers** (calls with `value > 0`): Will revert
+- **Non-value operations** (e.g., view calls, state changes without token movement): Will succeed
+
+To allow token or ETH operations, you **must** configure appropriate spend limits for each token that may be transferred. This ensures all outflows are tracked and enforced against the configured limits.
+
+**Warning:** Pre-approved assets on the account (e.g., existing ERC20 allowances to third-party contracts) may still be transferred if a whitelisted contract internally calls `transferFrom`. These indirect transfers bypass spend tracking. Account owners should review and revoke any unnecessary pre-existing approvals before delegating permissions.
+
 ## Storage Layout
 
 ```solidity

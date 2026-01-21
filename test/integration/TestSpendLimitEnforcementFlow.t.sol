@@ -192,4 +192,94 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         assertEq(mockToken.balanceOf(recipient), firstTransfer, "Second transfer should have reverted");
     }
 
+    /**
+     * @notice Tests that ERC20 transfers revert when permission has empty spends array.
+     * @dev Verifies that attempting to transfer tokens without configured spend limits
+     *      reverts with NoSpendPermissions error.
+     */
+    function test_ShouldRevertERC20TransferWithEmptySpends(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        // Create permission with calls but NO spend limits
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory emptySpends = new JustaPermissionManager.SpendLimit[](0);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            emptySpends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Attempt to transfer tokens - should revert
+        BaseAccount.Call[] memory transferCalls = new BaseAccount.Call[](1);
+        transferCalls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, 1 ether)
+        });
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_NoSpendPermissions.selector);
+
+        vm.prank(spender);
+        manager.executeBatch(permission, transferCalls);
+    }
+
+    /**
+     * @notice Tests that native ETH transfers revert when permission has empty spends array.
+     * @dev Verifies that attempting to send ETH without configured spend limits
+     *      reverts with NoSpendPermissions error.
+     */
+    function test_ShouldRevertNativeETHTransferWithEmptySpends(address spender) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+
+        address payable recipient = payable(address(0xBEEF));
+
+        // Create permission with calls but NO spend limits
+        // Using ANY_TARGET and EMPTY_CALLDATA_FN_SEL to allow plain ETH transfers
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(recipient, EMPTY_CALLDATA_FN_SEL);
+
+        JustaPermissionManager.SpendLimit[] memory emptySpends = new JustaPermissionManager.SpendLimit[](0);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            calls,
+            emptySpends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        BaseAccount.Call[] memory ethCalls = new BaseAccount.Call[](1);
+        ethCalls[0] = BaseAccount.Call({
+            target: recipient,
+            value: 1 ether,
+            data: ""
+        });
+
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_NoSpendPermissions.selector);
+
+        vm.prank(spender);
+        manager.executeBatch(permission, ethCalls);
+    }
+
 }
