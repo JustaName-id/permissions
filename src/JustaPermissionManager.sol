@@ -629,11 +629,6 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // to transfer from the permission account, treat it as outflow.
             if (fnSel == 0x23b872dd) {
                 address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
-                address to = LibBytes.loadCalldata(data, 0x24).lsbToAddress();
-                // Skip if this is a self-to-self transfer
-                if (from == permission.account && to == permission.account) {
-                    continue;
-                }
                 if (LibBytes.loadCalldata(data, 0x44) == 0) {
                     continue;
                 } // `amount == 0`
