@@ -138,10 +138,9 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     error JustaPermissionManager_ZeroSelector();
 
     /**
-     * @notice Thrown when duplicate spend limits are configured for the same token with identical parameters.
-     * @param token The token address with duplicate spend limit configuration.
+     * @notice Thrown when duplicate spend limits are configured with identical parameters.
      */
-    error JustaPermissionManager_DuplicateSpendLimit(address token);
+    error JustaPermissionManager_DuplicateSpendLimit();
 
     /**
      * @notice Thrown when attempting to spend a token that has no configured spend permissions.
@@ -452,7 +451,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             LibSort.sort(spendHashes);
             for (uint256 i = 1; i < spendsLength;) {
                 if (spendHashes[i] == spendHashes[i - 1]) {
-                    revert JustaPermissionManager_DuplicateSpendLimit(permission.spends[i].token);
+                    revert JustaPermissionManager_DuplicateSpendLimit();
                 }
                 unchecked {
                     ++i;

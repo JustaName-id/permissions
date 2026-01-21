@@ -569,11 +569,7 @@ contract TestWriteFunctions is Test, PreparePermission {
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector, address(mockToken)
-            )
-        );
+        vm.expectRevert(JustaPermissionManager.JustaPermissionManager_DuplicateSpendLimit.selector);
 
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
