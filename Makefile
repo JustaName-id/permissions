@@ -66,6 +66,14 @@ ifeq ($(findstring --network op-sepolia,$(ARGS)),--network op-sepolia)
 	NETWORK_ARGS := --rpc-url $(OP_SEPOLIA_RPC_URL) --account $(SEPOLIA_ACCOUNT) --broadcast --verify --verifier-url https://api.etherscan.io/v2/api --etherscan-api-key $(ETHERSCAN_API_KEY) --chain 11155420 -vvvv
 endif
 
+ifeq ($(findstring --network avax-mainnet,$(ARGS)),--network avax-mainnet)
+	NETWORK_ARGS := --rpc-url $(AVAX_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier-url https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan --etherscan-api-key $(SNOWTRACE_API_KEY) --chain 43114 -vvvv
+endif
+
+ifeq ($(findstring --network avax-fuji,$(ARGS)),--network avax-fuji)
+	NETWORK_ARGS := --rpc-url $(AVAX_FUJI_RPC_URL) --account $(SEPOLIA_ACCOUNT) --broadcast --verify --verifier-url https://api.routescan.io/v2/network/testnet/evm/43113/etherscan --etherscan-api-key $(SNOWTRACE_API_KEY) --chain 43113 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -88,4 +96,10 @@ deploy-arb-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
 deploy-arb-sepolia:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-avax-mainnet:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-avax-fuji:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
