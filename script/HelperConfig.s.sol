@@ -36,6 +36,9 @@ abstract contract CodeConstants {
     uint256 public constant GNOSIS_CHAIN_ID = 100;
     uint256 public constant GNOSIS_CHIADO_CHAIN_ID = 10_200;
 
+    uint256 public constant AVALANCHE_CHAIN_ID = 43_114;
+    uint256 public constant AVALANCHE_FUJI_CHAIN_ID = 43_113;
+
     ////////////////////////////////////////////////////////////////////////
     // ENTRY POINT
     ////////////////////////////////////////////////////////////////////////
