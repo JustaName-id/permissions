@@ -2845,6 +2845,242 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
     }
 
+    function test_ExecuteBatch_ShouldTrackIncreaseAllowanceSpend(
+        address spender,
+        address approvalSpender,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(approvalSpender != address(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 approveAmount = allowance / 2;
+        vm.assume(approveAmount > 0);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            INCREASE_ALLOWANCE_SELECTOR,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock the account's executeBatch to succeed
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        // Mock allowance to return 0 (simulating successful revocation)
+        vm.mockCall(
+            address(mockToken),
+            abi.encodeWithSelector(IERC20.allowance.selector, TEST_ACCOUNT_ADDRESS, approvalSpender),
+            abi.encode(uint256(0))
+        );
+
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(bytes4(0x39509351), approvalSpender, approveAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        // Verify increaseAllowance amount was tracked as spend
+        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
+        );
+        JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
+        assertEq(periodSpend.spend, approveAmount);
+    }
+
+    function test_ExecuteBatch_ShouldRevokeIncreaseAllowanceAfterExecution(
+        address spender,
+        address approvalSpender,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(approvalSpender != address(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 approveAmount = allowance / 2;
+        vm.assume(approveAmount > 0);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            INCREASE_ALLOWANCE_SELECTOR,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock the account's executeBatch to succeed
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        // Mock allowance to return 0 (simulating successful revocation)
+        vm.mockCall(
+            address(mockToken),
+            abi.encodeWithSelector(IERC20.allowance.selector, TEST_ACCOUNT_ADDRESS, approvalSpender),
+            abi.encode(uint256(0))
+        );
+
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(bytes4(0x39509351), approvalSpender, approveAmount)
+        });
+
+        // This should succeed because allowance returns 0 (revocation successful)
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+    }
+
+    function test_ExecuteBatch_ShouldRevertIfIncreaseAllowanceRevocationFails(
+        address spender,
+        address approvalSpender,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(approvalSpender != address(0));
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        uint160 allowance = 1000;
+        uint160 approveAmount = 100;
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            INCREASE_ALLOWANCE_SELECTOR,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock the account's executeBatch to succeed (but doesn't actually revoke approval)
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        // Mock allowance to return non-zero (approval wasn't revoked)
+        vm.mockCall(
+            address(mockToken),
+            abi.encodeWithSelector(IERC20.allowance.selector, TEST_ACCOUNT_ADDRESS, approvalSpender),
+            abi.encode(uint256(approveAmount))
+        );
+
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(bytes4(0x39509351), approvalSpender, approveAmount)
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JustaPermissionManager.JustaPermissionManager_ApprovalRevocationFailed.selector,
+                address(mockToken),
+                approvalSpender
+            )
+        );
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+    }
+
+    function test_ExecuteBatch_ShouldSkipZeroValueIncreaseAllowance(
+        address spender,
+        address approvalSpender,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(approvalSpender != address(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        JustaPermissionManager.Permission memory permission = createBasicPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            address(mockToken),
+            INCREASE_ALLOWANCE_SELECTOR,
+            address(mockToken),
+            allowance,
+            periodUnit,
+            multiplier
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mock the account's executeBatch to succeed
+        vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
+
+        // increaseAllowance with addedValue = 0 should be skipped
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(bytes4(0x39509351), approvalSpender, uint256(0))
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        // Verify no spend was tracked
+        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
+            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
+        );
+        JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
+        assertEq(periodSpend.spend, 0);
+    }
+
     function test_ExecuteBatch_ShouldTrackPermit2Approve(
         address spender,
         address permit2Spender,

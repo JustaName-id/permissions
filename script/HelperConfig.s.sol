@@ -97,6 +97,7 @@ abstract contract CodeConstants {
     bytes4 public constant TRANSFER_FROM_SELECTOR = 0x23b872dd; // transferFrom(address,address,uint256)
     bytes4 public constant APPROVE_SELECTOR = 0x095ea7b3; // approve(address,uint256)
     bytes4 public constant PERMIT2_APPROVE_SELECTOR = 0x87517c45; // approve(address,address,uint160,uint48)
+    bytes4 public constant INCREASE_ALLOWANCE_SELECTOR = 0x39509351; // increaseAllowance(address,uint256)
 
 }
 

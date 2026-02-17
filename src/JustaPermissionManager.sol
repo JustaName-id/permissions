@@ -651,6 +651,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `amount`
             }
 
+            // `increaseAllowance(address,uint256)` - 0x39509351
+            // Non-standard but widely deployed
+            if (fnSel == 0x39509351) {
+                if (LibBytes.loadCalldata(data, 0x24) == 0) {
+                    continue;
+                } // `addedValue == 0`
+                t.approvedERC20s.p(target);
+                t.approvalSpenders.p(LibBytes.loadCalldata(data, 0x04).lsbToAddress()); // `spender`
+                t.erc20s.p(target); // `token`
+                t.transferAmounts.p(LibBytes.loadCalldata(data, 0x24)); // `addedValue`
+            }
+
             // Permit2 `approve(address,address,uint160,uint48)` - 0x87517c45
             // For ERC20 tokens giving Permit2 infinite approvals by default,
             // the approve method on Permit2 acts like a approve method on the ERC20.
