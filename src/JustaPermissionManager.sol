@@ -627,6 +627,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // The account may have existing ERC20 allowances. If `transferFrom` is used
             // to transfer from the permission account, treat it as outflow.
             if (fnSel == 0x23b872dd) {
+                // ERC-721 shares this selector; skip NFT contracts to avoid
+                // misinterpreting `tokenId` as an ERC-20 amount.
+                if (ERC165Checker.supportsInterface(target, type(IERC721).interfaceId)) {
+                    continue;
+                }
                 address from = LibBytes.loadCalldata(data, 0x04).lsbToAddress();
                 if (LibBytes.loadCalldata(data, 0x44) == 0) {
                     continue;

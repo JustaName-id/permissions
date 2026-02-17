@@ -6,6 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { ICallChecker } from "../../src/interfaces/ICallChecker.sol";
 import { BaseAccount } from "@account-abstraction/core/BaseAccount.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import { PreparePermission } from "../../script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "../../src/JustaPermissionManager.sol";
@@ -3587,6 +3588,65 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.expectEmit(true, false, false, false, address(manager));
         emit JustaPermissionManager.CallsExecuted(expectedHash);
 
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    ERC721 transferFrom SKIP
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Tests that ERC721 transferFrom is skipped during calldata parsing.
+     * @dev ERC721 shares the 0x23b872dd selector with ERC20 transferFrom.
+     *      The parser must detect NFT contracts via ERC165 and skip them to
+     *      avoid misinterpreting tokenId as an ERC20 amount.
+     */
+    function test_ExecuteBatch_ShouldSkipERC721TransferFrom(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint256 tokenId = 42;
+
+        // Permission: call permission for ERC721 transferFrom + ERC20 spend limit (not for the NFT)
+        JustaPermissionManager.CallPermission[] memory callPerms = new JustaPermissionManager.CallPermission[](1);
+        callPerms[0] = createCall(address(mockERC721), TRANSFER_FROM_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), 100 ether, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            callPerms,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Build ERC721 transferFrom call
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockERC721),
+            value: 0,
+            data: abi.encodeWithSelector(IERC721.transferFrom.selector, TEST_ACCOUNT_ADDRESS, recipient, tokenId)
+        });
+
+        // Mock the actual execution on the account so it doesn't revert
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS,
+            abi.encodeWithSelector(BaseAccount.executeBatch.selector, calls),
+            abi.encode()
+        );
+
+        // Should NOT revert with NoSpendPermissions
         vm.prank(spender);
         manager.executeBatch(permission, calls);
     }

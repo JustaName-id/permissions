@@ -8,8 +8,10 @@ import { Test } from "forge-std/Test.sol";
 import { JustanAccount } from "justanaccount/JustanAccount.sol";
 import { PreparePermission } from "script/PreparePermission.s.sol";
 import { JustaPermissionManager } from "src/JustaPermissionManager.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ERC20Mock } from "test/mocks/ERC20Mock.sol";
 import { ERC20IncreaseAllowanceMock } from "test/mocks/ERC20IncreaseAllowanceMock.sol";
+import { ERC721Mock } from "test/mocks/ERC721Mock.sol";
 
 /**
  * @title TestSpendLimitEnforcementFlow
@@ -23,6 +25,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
     EntryPoint public entryPoint;
     ERC20Mock public mockToken;
     ERC20IncreaseAllowanceMock public mockTokenV2;
+    ERC721Mock public mockERC721;
 
     uint256 public constant INITIAL_BALANCE = 1000 ether;
 
@@ -33,6 +36,7 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         justanAccountImpl = new JustanAccount(address(entryPoint), address(0));
         mockToken = new ERC20Mock();
         mockTokenV2 = new ERC20IncreaseAllowanceMock();
+        mockERC721 = new ERC721Mock();
 
         mockToken.mint(TEST_ACCOUNT_ADDRESS, INITIAL_BALANCE);
         mockTokenV2.mint(TEST_ACCOUNT_ADDRESS, INITIAL_BALANCE);
@@ -482,6 +486,136 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         JustaPermissionManager.PeriodSpend memory periodSpend =
             manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, amount1 + amount2, "Combined spend should be tracked");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    ERC721 transferFrom SKIP
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Tests that ERC721 transferFrom works without a spend limit for the NFT.
+     * @dev The parser should detect the NFT via ERC165 and skip spend tracking,
+     *      so the call succeeds with only an unrelated ERC20 spend limit.
+     */
+    function test_ShouldAllowERC721TransferFromWithoutSpendLimit(address spender, address recipient) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint256 tokenId = 1;
+        mockERC721.mint(TEST_ACCOUNT_ADDRESS, tokenId);
+
+        // Permission: call permission for ERC721 transferFrom + ERC20 spend limit (not for NFT)
+        JustaPermissionManager.CallPermission[] memory callPerms = new JustaPermissionManager.CallPermission[](1);
+        callPerms[0] = createCall(address(mockERC721), TRANSFER_FROM_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), 100 ether, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            callPerms,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockERC721),
+            value: 0,
+            data: abi.encodeWithSelector(IERC721.transferFrom.selector, TEST_ACCOUNT_ADDRESS, recipient, tokenId)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        assertEq(mockERC721.ownerOf(tokenId), recipient, "NFT should be transferred to recipient");
+    }
+
+    /**
+     * @notice Tests that a mixed batch with ERC20 and ERC721 transferFrom works correctly.
+     * @dev ERC20 transferFrom should be tracked against the spend limit, while
+     *      ERC721 transferFrom should be skipped. Both should execute successfully.
+     */
+    function test_ShouldTrackERC20TransferFromAndSkipERC721InSameBatch(
+        address spender,
+        address recipient
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(recipient != address(0));
+        vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
+
+        uint256 tokenId = 1;
+        uint256 erc20Amount = 50 ether;
+        uint160 allowance = 100 ether;
+
+        mockERC721.mint(TEST_ACCOUNT_ADDRESS, tokenId);
+
+        // Account must approve itself for ERC20 transferFrom
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        mockToken.approve(TEST_ACCOUNT_ADDRESS, type(uint256).max);
+
+        // Permission: call permissions for both ERC20 and ERC721 transferFrom
+        JustaPermissionManager.CallPermission[] memory callPerms = new JustaPermissionManager.CallPermission[](2);
+        callPerms[0] = createCall(address(mockToken), TRANSFER_FROM_SELECTOR);
+        callPerms[1] = createCall(address(mockERC721), TRANSFER_FROM_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            callPerms,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Mixed batch: ERC20 transferFrom + ERC721 transferFrom
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](2);
+        calls[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transferFrom.selector, TEST_ACCOUNT_ADDRESS, recipient, erc20Amount)
+        });
+        calls[1] = BaseAccount.Call({
+            target: address(mockERC721),
+            value: 0,
+            data: abi.encodeWithSelector(IERC721.transferFrom.selector, TEST_ACCOUNT_ADDRESS, recipient, tokenId)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+
+        // Verify ERC20 transfer happened
+        assertEq(mockToken.balanceOf(recipient), erc20Amount, "ERC20 should be transferred");
+
+        // Verify NFT transfer happened
+        assertEq(mockERC721.ownerOf(tokenId), recipient, "NFT should be transferred");
+
+        // Verify only ERC20 spend was tracked
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
+        JustaPermissionManager.PeriodSpend memory periodSpend =
+            manager.getLastUpdatedPeriod(permission, spendLimit);
+        assertEq(periodSpend.spend, erc20Amount, "Only ERC20 spend should be tracked");
     }
 
 }
