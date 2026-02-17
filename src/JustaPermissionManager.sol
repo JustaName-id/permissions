@@ -352,7 +352,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @param permission The complete permission with calls and spends arrays.
      * @return True if approved successfully.
      */
-    function approve(Permission calldata permission) external requireSender(permission.account) returns (bool) {
+    function approve(Permission calldata permission) external nonReentrant requireSender(permission.account) returns (bool) {
         // Check spender is non-zero
         if (permission.spender == address(0)) {
             revert JustaPermissionManager_ZeroSpender();
