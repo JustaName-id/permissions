@@ -188,6 +188,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     error JustaPermissionManager_CheckerHasNoCode(address checker);
 
+    /**
+     * @notice Thrown when calldata length is between 1 and 3 bytes (invalid selector).
+     * @param length The invalid calldata length.
+     */
+    error JustaPermissionManager_InvalidCalldataLength(uint256 length);
+
     ////////////////////////////////////////////////////////////////////////
     // ENUMS
     ////////////////////////////////////////////////////////////////////////
@@ -547,9 +553,15 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 revert JustaPermissionManager_CannotTargetAccount();
             }
 
+            // Reject calldata with 1-3 bytes (invalid function selector)
+            uint256 dataLength = calls[i].data.length;
+            if (dataLength > 0 && dataLength < 4) {
+                revert JustaPermissionManager_InvalidCalldataLength(dataLength);
+            }
+
             // Extract function selector (use EMPTY_CALLDATA_FN_SEL for empty calldata)
             bytes4 selector =
-                calls[i].data.length >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
+                dataLength >= 4 ? bytes4(LibBytes.loadCalldata(calls[i].data, 0x00)) : EMPTY_CALLDATA_FN_SEL;
 
             // Find all matching call permissions and their checkers
             (bool isAllowed, address[] memory matchingCheckers) = _findMatchingPermissions(permission, target, selector);

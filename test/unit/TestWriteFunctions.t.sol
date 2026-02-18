@@ -1649,6 +1649,54 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, executeCalls);
     }
 
+    function test_ExecuteBatch_ShouldRevertOnInvalidCalldataLength(
+        address spender,
+        uint160 allowance,
+        uint8 periodUnit,
+        uint8 multiplier
+    )
+        public
+    {
+        vm.assume(spender != address(0));
+        vm.assume(allowance > 0);
+        vm.assume(periodUnit <= 6);
+        vm.assume(multiplier > 0);
+
+        // Create permission with EMPTY_CALLDATA_FN_SEL (closest match for partial calldata)
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), EMPTY_CALLDATA_FN_SEL);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(NATIVE_TOKEN, allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        BaseAccount.Call[] memory executeCalls = new BaseAccount.Call[](1);
+
+        // 1 byte of calldata should revert
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aa" });
+        vm.prank(spender);
+        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 1));
+        manager.executeBatch(permission, executeCalls);
+
+        // 2 bytes of calldata should revert
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aabb" });
+        vm.prank(spender);
+        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 2));
+        manager.executeBatch(permission, executeCalls);
+
+        // 3 bytes of calldata should revert
+        executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aabbcc" });
+        vm.prank(spender);
+        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 3));
+        manager.executeBatch(permission, executeCalls);
+    }
+
     /*//////////////////////////////////////////////////////////////
                         CALL CHECKER VALIDATION
     //////////////////////////////////////////////////////////////*/
