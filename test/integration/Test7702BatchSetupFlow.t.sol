@@ -61,7 +61,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -142,7 +142,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -230,7 +230,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -295,7 +295,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -388,7 +388,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 

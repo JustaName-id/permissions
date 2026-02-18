@@ -47,7 +47,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -84,7 +84,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -119,7 +119,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -160,7 +160,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint48 timestamp = uint48(block.timestamp);
@@ -199,7 +199,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](0);
@@ -231,7 +231,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -266,7 +266,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -301,7 +301,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -338,7 +338,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(target != address(manager));
         vm.assume(target != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -373,7 +373,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -406,7 +406,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -440,7 +440,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
             TEST_ACCOUNT_ADDRESS,
@@ -474,7 +474,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -513,7 +513,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -552,7 +552,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
@@ -588,7 +588,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -629,7 +629,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -668,7 +668,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
         // Checker can be address(0) or any valid address except manager and account
         vm.assume(checker != address(manager));
@@ -718,7 +718,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
@@ -751,7 +751,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
@@ -785,7 +785,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
         // Ensure eoaChecker is not a contract (no code) and not special addresses
         vm.assume(eoaChecker != address(0));
@@ -832,7 +832,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -871,7 +871,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -906,7 +906,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -949,7 +949,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -999,7 +999,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1038,7 +1038,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1073,7 +1073,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1116,7 +1116,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1170,7 +1170,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1215,7 +1215,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1253,7 +1253,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1297,7 +1297,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint48 futureStart = uint48(block.timestamp + 1 days);
@@ -1347,7 +1347,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint48 pastStart = uint48(block.timestamp);
@@ -1398,7 +1398,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1440,7 +1440,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1489,7 +1489,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(attemptedSelector != bytes4(0));
         vm.assume(permittedSelector != attemptedSelector);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -1542,7 +1542,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(randomTarget != TEST_ACCOUNT_ADDRESS);
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         // Create permission with ANY_TARGET wildcard
@@ -1582,7 +1582,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(randomSelector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         // Create permission with ANY_FN_SEL wildcard
@@ -1621,7 +1621,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         // Create permission with EMPTY_CALLDATA_FN_SEL
@@ -1659,7 +1659,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         // Create permission with EMPTY_CALLDATA_FN_SEL (closest match for partial calldata)
@@ -1719,7 +1719,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
         vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -1779,7 +1779,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
         vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -1844,7 +1844,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
         vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -1912,7 +1912,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -1974,7 +1974,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(uint160(checker2) > 0xff); // Exclude precompiles
         vm.assume(checker1 != checker2);
         vm.assume(allowance > 10);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 4;
@@ -2054,7 +2054,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(checker != TEST_ACCOUNT_ADDRESS);
         vm.assume(uint160(checker) > 0xff); // Exclude precompiles
         vm.assume(allowance > 10);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 4;
@@ -2323,7 +2323,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(transferAmount > 0);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         // Create a second mock token that is NOT in the spend limits
@@ -2375,7 +2375,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 allowance = 100;
@@ -2429,7 +2429,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 allowance = type(uint160).max;
@@ -2498,7 +2498,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 allowance = 1000;
@@ -2567,7 +2567,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint256 sendValue = uint256(allowance) / 2;
@@ -2615,7 +2615,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2672,7 +2672,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2727,7 +2727,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -2786,7 +2786,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -2849,7 +2849,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -2906,7 +2906,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -2969,7 +2969,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -3024,7 +3024,7 @@ contract TestWriteFunctions is Test, PreparePermission {
     {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 allowance = 1000;
@@ -3088,7 +3088,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(approvalSpender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -3142,7 +3142,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(permit2Spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -3201,7 +3201,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(permit2Spender != address(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 approveAmount = allowance / 2;
@@ -3262,7 +3262,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -3324,7 +3324,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 10);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 firstTransfer = allowance / 4;
@@ -3478,7 +3478,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;
@@ -3532,7 +3532,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient1 != TEST_ACCOUNT_ADDRESS);
         vm.assume(recipient2 != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 10);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount1 = allowance / 4;
@@ -3598,7 +3598,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint160 transferAmount = allowance / 2;

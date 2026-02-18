@@ -112,7 +112,7 @@ contract PreparePermission is Script, CodeConstants {
      * @param selector The function selector for the call permission.
      * @param token The token address for the spend limit.
      * @param allowance The spend allowance.
-     * @param periodUnit The period unit (0-6).
+     * @param periodUnit The period unit (0-5).
      * @param multiplier The period multiplier.
      * @return permission The constructed Permission struct.
      */

@@ -74,7 +74,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -106,7 +106,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -141,7 +141,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -185,7 +185,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -217,7 +217,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -260,7 +260,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -295,7 +295,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission1 = createBasicPermission(
@@ -344,7 +344,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
         vm.assume(salt1 != salt2);
 
@@ -395,7 +395,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender1 != spender2);
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission1 = createBasicPermission(
@@ -446,7 +446,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -486,7 +486,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -535,7 +535,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -575,7 +575,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         JustaPermissionManager.Permission memory permission = createBasicPermission(
@@ -619,7 +619,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(spender != address(0));
         vm.assume(selector != bytes4(0));
         vm.assume(allowance > 0);
-        vm.assume(periodUnit <= 6);
+        vm.assume(periodUnit <= 5);
         vm.assume(multiplier > 0);
 
         uint48 start = uint48(block.timestamp);

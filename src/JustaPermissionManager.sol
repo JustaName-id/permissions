@@ -201,14 +201,14 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     /**
      * @notice Period units for flexible period configuration.
      * @dev Multiplier is applied to all units except Forever.
+     *      All periods are aligned to the permission start time.
      */
     enum PeriodUnit {
         Minute, // 60 seconds
         Hour, // 3600 seconds
         Day, // 86400 seconds
-        Week, // 604800 seconds (calendar-aligned to Monday)
-        Month, // Calendar-aligned to 1st of month
-        Year, // Calendar-aligned to Jan 1st
+        Week, // 604800 seconds
+        Month, // Calendar month (uses addMonths for day clamping)
         Forever // type(uint48).max, one-time allowance for entire permission duration
     }
 
@@ -872,18 +872,18 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     }
 
     /**
-     * @notice Rounds the unix timestamp down to the period start.
-     * @dev Aligns periods to calendar boundaries to prevent gaming.
-     *      - Minute/Hour/Day: Rounds down to base unit boundary, then applies multiplier
-     *      - Week: Aligns to Monday, then groups N weeks together
-     *      - Month: Aligns to 1st of month, then groups N months together
-     *      - Year: Aligns to Jan 1st, then groups N years together
+     * @notice Computes the start of the spend period containing `unixTimestamp`,
+     *         aligned to the permission's own start time.
+     * @dev Periods are aligned to `permissionStart` so every period is exactly the intended length.
+     *      - Minute/Hour/Day/Week: periodIndex = (unixTimestamp - permissionStart) / duration
+     *      - Month: Uses DateTimeLib.addMonths for day-clamping correctness
      *      - Forever: Returns 1 (non-zero to differentiate from unset, multiplier ignored)
      */
     function startOfSpendPeriod(
         uint256 unixTimestamp,
         PeriodUnit unit,
-        uint8 multiplier
+        uint8 multiplier,
+        uint256 permissionStart
     )
         public
         pure
@@ -892,58 +892,43 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (unit == PeriodUnit.Forever) {
             return 1; // Non-zero to differentiate from not set.
         }
-        if (unit == PeriodUnit.Minute) {
-            // Align to minute boundary, then find the correct multiplier window
-            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 60), 60);
-            uint256 periodDuration = 60 * uint256(multiplier);
-            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
-        }
-        if (unit == PeriodUnit.Hour) {
-            // Align to hour boundary, then find the correct multiplier window
-            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 3600), 3600);
-            uint256 periodDuration = 3600 * uint256(multiplier);
-            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
-        }
-        if (unit == PeriodUnit.Day) {
-            // Align to day boundary, then find the correct multiplier window
-            uint256 baseStart = Math.rawMul(Math.rawDiv(unixTimestamp, 86_400), 86_400);
-            uint256 periodDuration = 86_400 * uint256(multiplier);
-            return Math.rawMul(Math.rawDiv(baseStart, periodDuration), periodDuration);
-        }
-        if (unit == PeriodUnit.Week) {
-            // Align to Monday, then group N weeks together
-            uint256 monday = DateTimeLib.mondayTimestamp(unixTimestamp);
-            // Calculate weeks since epoch (Jan 1, 1970 was a Thursday, so first Monday is Jan 5, 1970)
-            // Reference Monday: Jan 5, 1970 00:00:00 UTC = 86400 * 4 = 345600
-            uint256 referenceMonday = 345_600;
-            if (monday < referenceMonday) {
-                return monday; // Before reference, return as-is
-            }
-            uint256 weeksSinceRef = (monday - referenceMonday) / 604_800;
-            uint256 periodIndex = weeksSinceRef / uint256(multiplier);
-            return referenceMonday + (periodIndex * uint256(multiplier) * 604_800);
-        }
-        (uint256 year, uint256 month,) = DateTimeLib.timestampToDate(unixTimestamp);
-        // Note: DateTimeLib's months and month-days start from 1.
+
         if (unit == PeriodUnit.Month) {
-            // Align to 1st of month, then group N months together
-            // Calculate months since epoch (Jan 1970 = month 0)
-            uint256 monthsSinceEpoch = (year - 1970) * 12 + (month - 1);
-            uint256 periodIndex = monthsSinceEpoch / uint256(multiplier);
-            uint256 totalMonths = periodIndex * uint256(multiplier);
-            uint256 startYear = 1970 + totalMonths / 12;
-            uint256 startMonth = (totalMonths % 12) + 1; // +1 because DateTimeLib months are 1-indexed
-            return DateTimeLib.dateToTimestamp(startYear, startMonth, 1);
+            // Estimate period index from calendar months elapsed
+            (uint256 permYear, uint256 permMonth,) = DateTimeLib.timestampToDate(permissionStart);
+            (uint256 curYear, uint256 curMonth,) = DateTimeLib.timestampToDate(unixTimestamp);
+            uint256 monthsElapsed = (curYear - permYear) * 12 + (curMonth - permMonth);
+            uint256 monthPeriodIndex = monthsElapsed / uint256(multiplier);
+
+            uint256 periodStart =
+                DateTimeLib.addMonths(permissionStart, monthPeriodIndex * uint256(multiplier));
+
+            // Edge case: day clamping may push periodStart past unixTimestamp
+            if (periodStart > unixTimestamp) {
+                monthPeriodIndex -= 1;
+                periodStart =
+                    DateTimeLib.addMonths(permissionStart, monthPeriodIndex * uint256(multiplier));
+            }
+
+            return periodStart;
         }
-        if (unit == PeriodUnit.Year) {
-            // Align to Jan 1st, then group N years together
-            // Calculate years since epoch
-            uint256 yearsSinceEpoch = year - 1970;
-            uint256 periodIndex = yearsSinceEpoch / uint256(multiplier);
-            uint256 startYear = 1970 + (periodIndex * uint256(multiplier));
-            return DateTimeLib.dateToTimestamp(startYear, 1, 1);
+
+        // Fixed units: Minute, Hour, Day, Week
+        uint256 baseUnitDuration;
+        if (unit == PeriodUnit.Minute) {
+            baseUnitDuration = 60;
+        } else if (unit == PeriodUnit.Hour) {
+            baseUnitDuration = 3600;
+        } else if (unit == PeriodUnit.Day) {
+            baseUnitDuration = 86_400;
+        } else {
+            // Week
+            baseUnitDuration = 604_800;
         }
-        revert(); // We shouldn't hit here.
+        uint256 periodDuration = baseUnitDuration * uint256(multiplier);
+        uint256 elapsed = unixTimestamp - permissionStart;
+        uint256 periodIndex = elapsed / periodDuration;
+        return permissionStart + periodIndex * periodDuration;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -951,14 +936,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     ////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Get the duration of a spend period in seconds.
-     * @dev For fixed units (Minute, Hour, Day), returns baseDuration * multiplier.
-     *      For calendar units (Week, Month, Year), calculates duration for N units.
+     * @notice Get the duration of a spend period in seconds for fixed-length units.
+     * @dev Only handles Minute, Hour, Day, Week. Month and Forever are handled separately.
      */
     function _periodDuration(
         PeriodUnit unit,
-        uint8 multiplier,
-        uint256 periodStart
+        uint8 multiplier
     )
         internal
         pure
@@ -973,32 +956,8 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         if (unit == PeriodUnit.Day) {
             return 86_400 * uint48(multiplier);
         }
-        if (unit == PeriodUnit.Week) {
-            // Duration is N weeks
-            return 604_800 * uint48(multiplier);
-        }
-
-        // For Month and Year, calculate actual duration for N units
-        if (unit == PeriodUnit.Month) {
-            (uint256 year, uint256 month,) = DateTimeLib.timestampToDate(periodStart);
-            // Add N months to get the next period start
-            uint256 targetMonth = month + uint256(multiplier);
-            uint256 targetYear = year;
-            while (targetMonth > 12) {
-                targetMonth -= 12;
-                targetYear += 1;
-            }
-            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(targetYear, targetMonth, 1);
-            return uint48(nextPeriodStart - periodStart);
-        }
-
-        if (unit == PeriodUnit.Year) {
-            (uint256 year,,) = DateTimeLib.timestampToDate(periodStart);
-            uint256 nextPeriodStart = DateTimeLib.dateToTimestamp(year + uint256(multiplier), 1, 1);
-            return uint48(nextPeriodStart - periodStart);
-        }
-
-        return type(uint48).max; // Forever
+        // Week
+        return 604_800 * uint48(multiplier);
     }
 
     /**
@@ -1165,65 +1124,48 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             return PeriodSpend({ start: permissionStart, end: permissionEnd, spend: 0 });
         }
 
-        // Use startOfSpendPeriod to align to calendar boundaries
-        uint48 periodStart = uint48(startOfSpendPeriod(currentTimestamp, spendLimit.unit, spendLimit.multiplier));
+        uint48 periodStart;
         uint48 periodEnd;
 
-        // If permission starts mid-period, we need to handle the first period specially
-        // to prevent overlapping periods and double-spending
-        if (periodStart < permissionStart) {
-            // Permission started mid-period, so first period starts at permission start
-            periodStart = permissionStart;
+        if (spendLimit.unit == PeriodUnit.Month) {
+            // Month periods use addMonths for day-clamping correctness.
+            // Compute periodStart and periodEnd in one pass without calling startOfSpendPeriod.
+            (uint256 permYear, uint256 permMonth,) = DateTimeLib.timestampToDate(permissionStart);
+            (uint256 curYear, uint256 curMonth,) = DateTimeLib.timestampToDate(currentTimestamp);
+            uint256 monthsElapsed = (curYear - permYear) * 12 + (curMonth - permMonth);
+            uint256 periodIndex = monthsElapsed / uint256(spendLimit.multiplier);
 
-            // Calculate the next period boundary after permissionStart
-            if (
-                spendLimit.unit == PeriodUnit.Minute || spendLimit.unit == PeriodUnit.Hour
-                    || spendLimit.unit == PeriodUnit.Day
-            ) {
-                // For fixed units with multiplier, find the next boundary
-                uint256 baseUnitDuration;
-                if (spendLimit.unit == PeriodUnit.Minute) {
-                    baseUnitDuration = 60;
-                } else if (spendLimit.unit == PeriodUnit.Hour) {
-                    baseUnitDuration = 3600;
-                } else {
-                    baseUnitDuration = 86_400;
-                }
-                uint256 periodDuration = baseUnitDuration * uint256(spendLimit.multiplier);
-                // Find the next period boundary after permissionStart
-                uint256 nextBoundary =
-                    Math.rawMul(Math.rawDiv(uint256(permissionStart), periodDuration) + 1, periodDuration);
+            uint256 candidateStart =
+                DateTimeLib.addMonths(uint256(permissionStart), periodIndex * uint256(spendLimit.multiplier));
 
-                // Check for overflow before casting
-                if (nextBoundary > type(uint48).max) {
-                    revert JustaPermissionManager_PeriodOverflow();
-                }
-                periodEnd = uint48(nextBoundary);
-            } else {
-                // For calendar-aligned units, find the period start that contains permissionStart
-                // (not currentTimestamp, since permissionStart is what matters for the first period)
-                uint48 permissionPeriodStart =
-                    uint48(startOfSpendPeriod(permissionStart, spendLimit.unit, spendLimit.multiplier));
-                uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier, permissionPeriodStart);
-                uint256 calculatedEnd = uint256(permissionPeriodStart) + uint256(duration);
-
-                // Check for overflow before casting
-                if (calculatedEnd > type(uint48).max) {
-                    revert JustaPermissionManager_PeriodOverflow();
-                }
-                periodEnd = uint48(calculatedEnd);
+            // Edge case: day clamping may push candidateStart past currentTimestamp
+            if (candidateStart > uint256(currentTimestamp)) {
+                periodIndex -= 1;
+                candidateStart =
+                    DateTimeLib.addMonths(uint256(permissionStart), periodIndex * uint256(spendLimit.multiplier));
             }
-        } else {
-            // Normal case: period start is at or after permission start
-            // Calculate period end using duration
-            uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier, periodStart);
-            uint256 calculatedEnd = uint256(periodStart) + uint256(duration);
 
-            // Check for overflow before casting
+            periodStart = uint48(candidateStart);
+
+            uint256 calculatedEnd = DateTimeLib.addMonths(
+                uint256(permissionStart), (periodIndex + 1) * uint256(spendLimit.multiplier)
+            );
+
             if (calculatedEnd > type(uint48).max) {
                 revert JustaPermissionManager_PeriodOverflow();
             }
+            periodEnd = uint48(calculatedEnd);
+        } else {
+            // Fixed units: Minute, Hour, Day, Week
+            periodStart = uint48(
+                startOfSpendPeriod(currentTimestamp, spendLimit.unit, spendLimit.multiplier, permissionStart)
+            );
+            uint48 duration = _periodDuration(spendLimit.unit, spendLimit.multiplier);
+            uint256 calculatedEnd = uint256(periodStart) + uint256(duration);
 
+            if (calculatedEnd > type(uint48).max) {
+                revert JustaPermissionManager_PeriodOverflow();
+            }
             periodEnd = uint48(calculatedEnd);
         }
 
