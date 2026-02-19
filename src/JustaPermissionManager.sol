@@ -235,7 +235,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         address token;
         uint160 allowance;
         PeriodUnit unit;
-        uint8 multiplier; // 1-255, ignored for Forever only
+        uint16 multiplier; // 1-65535, ignored for Forever only
     }
 
     /**
@@ -300,10 +300,10 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         keccak256("CallPermission(address target,bytes4 selector,address checker)");
 
     bytes32 public constant SPEND_LIMIT_TYPEHASH =
-        keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
+        keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint16 multiplier)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
-        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector,address checker)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
+        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector,address checker)SpendLimit(address token,uint160 allowance,uint8 unit,uint16 multiplier)"
     );
 
     ////////////////////////////////////////////////////////////////////////
@@ -882,7 +882,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     function startOfSpendPeriod(
         uint256 unixTimestamp,
         PeriodUnit unit,
-        uint8 multiplier,
+        uint16 multiplier,
         uint256 permissionStart
     )
         public
@@ -912,7 +912,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     function _fixedPeriodDuration(
         PeriodUnit unit,
-        uint8 multiplier
+        uint16 multiplier
     )
         internal
         pure
@@ -941,7 +941,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      */
     function _monthPeriodStart(
         uint256 unixTimestamp,
-        uint8 multiplier,
+        uint16 multiplier,
         uint256 permissionStart
     )
         internal
@@ -972,7 +972,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
     function _fixedPeriodStart(
         uint256 unixTimestamp,
         PeriodUnit unit,
-        uint8 multiplier,
+        uint16 multiplier,
         uint256 permissionStart
     )
         internal

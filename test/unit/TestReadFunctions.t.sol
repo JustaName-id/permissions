@@ -66,7 +66,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -99,7 +99,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -134,7 +134,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -177,7 +177,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -210,7 +210,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -252,7 +252,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -287,7 +287,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -334,7 +334,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier,
+        uint16 multiplier,
         uint256 salt1,
         uint256 salt2
     )
@@ -385,7 +385,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -438,7 +438,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -479,7 +479,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -527,7 +527,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         view
@@ -568,7 +568,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -612,7 +612,7 @@ contract TestReadFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {

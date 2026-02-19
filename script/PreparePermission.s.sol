@@ -89,7 +89,7 @@ contract PreparePermission is Script, CodeConstants {
         address token,
         uint160 allowance,
         JustaPermissionManager.PeriodUnit unit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         pure
@@ -127,7 +127,7 @@ contract PreparePermission is Script, CodeConstants {
         address token,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
         pure

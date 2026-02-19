@@ -38,7 +38,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -78,7 +78,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -112,7 +112,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -153,7 +153,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -193,7 +193,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -224,7 +224,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -259,7 +259,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -294,7 +294,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -329,7 +329,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address target,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -366,7 +366,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -400,7 +400,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         bytes4 selector,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -467,7 +467,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -506,7 +506,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -545,7 +545,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -581,7 +581,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -622,7 +622,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -661,7 +661,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -711,7 +711,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -744,7 +744,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -778,7 +778,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -823,7 +823,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -864,7 +864,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -899,7 +899,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -942,7 +942,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -990,7 +990,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1031,7 +1031,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1066,7 +1066,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1109,7 +1109,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1161,7 +1161,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1208,7 +1208,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1246,7 +1246,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1290,7 +1290,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1340,7 +1340,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1391,7 +1391,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1433,7 +1433,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1480,7 +1480,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 attemptedSelector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1532,7 +1532,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 selector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1575,7 +1575,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         bytes4 randomSelector,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1615,7 +1615,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1653,7 +1653,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1707,7 +1707,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1767,7 +1767,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1832,7 +1832,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1904,7 +1904,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -1955,7 +1955,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker2,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2040,7 +2040,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address checker,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2314,7 +2314,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         uint160 transferAmount,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2368,7 +2368,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         address recipient,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2422,7 +2422,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         address recipient,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2492,7 +2492,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         address approvalSpender,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2559,7 +2559,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2607,7 +2607,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2664,7 +2664,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2721,7 +2721,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2779,7 +2779,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2842,7 +2842,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2899,7 +2899,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -2962,7 +2962,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3018,7 +3018,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         address approvalSpender,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3081,7 +3081,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address approvalSpender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3135,7 +3135,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address permit2Spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3194,7 +3194,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address permit2Spender,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3254,7 +3254,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3316,7 +3316,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3386,7 +3386,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address spender,
         address recipient,
         uint160 allowance,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3394,7 +3394,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.assume(recipient != address(0));
         vm.assume(recipient != TEST_ACCOUNT_ADDRESS);
         vm.assume(allowance > 10);
-        vm.assume(multiplier > 0);
+        vm.assume(multiplier > 0 && multiplier <= 700);
 
         uint160 transferAmount = allowance / 2;
         vm.assume(transferAmount > 0);
@@ -3470,7 +3470,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3522,7 +3522,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient2,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
@@ -3590,7 +3590,7 @@ contract TestWriteFunctions is Test, PreparePermission {
         address recipient,
         uint160 allowance,
         uint8 periodUnit,
-        uint8 multiplier
+        uint16 multiplier
     )
         public
     {
