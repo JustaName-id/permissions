@@ -897,7 +897,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // Estimate period index from calendar months elapsed
             (uint256 permYear, uint256 permMonth,) = DateTimeLib.timestampToDate(permissionStart);
             (uint256 curYear, uint256 curMonth,) = DateTimeLib.timestampToDate(unixTimestamp);
-            uint256 monthsElapsed = (curYear - permYear) * 12 + (curMonth - permMonth);
+            uint256 monthsElapsed = (curYear * 12 + curMonth) - (permYear * 12 + permMonth);
             uint256 monthPeriodIndex = monthsElapsed / uint256(multiplier);
 
             uint256 periodStart =
@@ -1132,7 +1132,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // Compute periodStart and periodEnd in one pass without calling startOfSpendPeriod.
             (uint256 permYear, uint256 permMonth,) = DateTimeLib.timestampToDate(permissionStart);
             (uint256 curYear, uint256 curMonth,) = DateTimeLib.timestampToDate(currentTimestamp);
-            uint256 monthsElapsed = (curYear - permYear) * 12 + (curMonth - permMonth);
+            uint256 monthsElapsed = (curYear * 12 + curMonth) - (permYear * 12 + permMonth);
             uint256 periodIndex = monthsElapsed / uint256(spendLimit.multiplier);
 
             uint256 candidateStart =
