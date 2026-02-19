@@ -19,7 +19,7 @@
 - **Time-Bound Permissions**: Enforce temporal access control with start/end timestamps. Supports future-dated permissions and time-limited delegation.
 - **Call Authorization**: Whitelist-based call permissions specifying exact (target, selector) pairs with wildcard support for flexible policies.
 - **Call Checkers**: Optional external validators that receive full calldata for parameter validation, enabling sophisticated authorization logic.
-- **Flexible Spend Limits**: Per-token spending limits with multiple period types (Minute, Hour, Day, Week, Month, Year, Forever) and multipliers for extended periods.
+- **Flexible Spend Limits**: Per-token spending limits with multiple period types (Minute, Hour, Day, Week, Month, Forever) and multipliers for extended periods. All periods are aligned to the permission start time.
 - **Multiple Limits Per Token**: Support simultaneous period-based limits (e.g., hourly AND daily limits on the same token).
 - **Native Token Support**: ERC-7528 convention for ETH spending limits using the `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE` address.
 - **ERC20 Protection**: Automatic approval revocation after execution prevents malicious contracts from leaving backdoor approvals.
@@ -104,8 +104,8 @@ Recurring spending allowance with flexible periods:
 struct SpendLimit {
     address token;           // Token to limit (or NATIVE_TOKEN)
     uint160 allowance;       // Max spend per period
-    PeriodUnit unit;         // Period type (Minute-Year or Forever)
-    uint8 multiplier;        // Period multiplier (1-255)
+    PeriodUnit unit;         // Period type (Minute-Month or Forever)
+    uint16 multiplier;       // Period multiplier (1-65535)
 }
 ```
 
@@ -116,12 +116,13 @@ enum PeriodUnit {
     Minute,     // 60 seconds
     Hour,       // 3600 seconds
     Day,        // 86400 seconds
-    Week,       // 604800 seconds (Monday-aligned)
-    Month,      // Calendar month (aligned to 1st)
-    Year,       // Calendar year (aligned to Jan 1st)
-    Forever     // One-time allowance for entire permission
+    Week,       // 604800 seconds
+    Month,      // Calendar month (uses addMonths for day clamping)
+    Forever     // One-time allowance for entire permission duration
 }
 ```
+
+All periods (except Forever) are aligned to the permission's start time, ensuring every period is exactly the intended length with no premature resets.
 
 ### PeriodSpend
 
@@ -179,7 +180,7 @@ address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 - `getLastUpdatedPeriod(bytes32 permissionHash, bytes32 spendLimitHash)`: Get last updated spend period info.
 - `getCurrentPeriod(SpendLimit calldata spendLimit, uint48 permissionStart, uint48 permissionEnd)`: Calculate current spend period.
 - `getHash(Permission calldata permission)`: Calculate EIP-712 permission hash.
-- `startOfSpendPeriod(uint48 timestamp, PeriodUnit unit, uint8 multiplier)`: Get period start for given timestamp with calendar alignment.
+- `startOfSpendPeriod(uint256 unixTimestamp, PeriodUnit unit, uint16 multiplier, uint256 permissionStart)`: Get period start for given timestamp, aligned to the permission start time.
 
 ## Security Model
 
@@ -204,8 +205,7 @@ address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 ### Spend Tracking
 
 - Conservative approach using max of calldata amounts and balance deltas
-- Calendar-aligned periods prevent timing attacks
-- Handles first period specially when permission starts mid-period
+- Permission-start-aligned periods prevent timing attacks (no epoch alignment exploits)
 
 ### Empty Spend Limits Behavior
 
