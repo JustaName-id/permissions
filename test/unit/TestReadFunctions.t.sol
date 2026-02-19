@@ -677,10 +677,7 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(multiplier > 0);
 
         uint256 result = manager.startOfSpendPeriod(
-            uint256(timestamp),
-            JustaPermissionManager.PeriodUnit.Forever,
-            multiplier,
-            uint256(permStart)
+            uint256(timestamp), JustaPermissionManager.PeriodUnit.Forever, multiplier, uint256(permStart)
         );
         assertEq(result, 1);
     }
@@ -736,18 +733,20 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.assume(elapsed > 0);
 
         uint256 duration;
-        if (periodUnit == 0) duration = 60 * uint256(multiplier);
-        else if (periodUnit == 1) duration = 3600 * uint256(multiplier);
-        else if (periodUnit == 2) duration = 86_400 * uint256(multiplier);
-        else duration = 604_800 * uint256(multiplier);
+        if (periodUnit == 0) {
+            duration = 60 * uint256(multiplier);
+        } else if (periodUnit == 1) {
+            duration = 3600 * uint256(multiplier);
+        } else if (periodUnit == 2) {
+            duration = 86_400 * uint256(multiplier);
+        } else {
+            duration = 604_800 * uint256(multiplier);
+        }
 
         uint256 timestamp = uint256(permStart) + uint256(elapsed);
 
         uint256 result = manager.startOfSpendPeriod(
-            timestamp,
-            JustaPermissionManager.PeriodUnit(periodUnit),
-            multiplier,
-            uint256(permStart)
+            timestamp, JustaPermissionManager.PeriodUnit(periodUnit), multiplier, uint256(permStart)
         );
 
         uint256 expected = uint256(permStart) + (uint256(elapsed) / duration) * duration;
@@ -756,14 +755,7 @@ contract TestReadFunctions is Test, PreparePermission {
         assertTrue(result + duration > timestamp);
     }
 
-    function test_StartOfSpendPeriod_LargeMultiplier(
-        uint16 multiplier,
-        uint48 permStart,
-        uint48 elapsed
-    )
-        public
-        view
-    {
+    function test_StartOfSpendPeriod_LargeMultiplier(uint16 multiplier, uint48 permStart, uint48 elapsed) public view {
         vm.assume(multiplier > 255);
         vm.assume(permStart > 0);
         vm.assume(elapsed > 0);
@@ -772,10 +764,7 @@ contract TestReadFunctions is Test, PreparePermission {
         uint256 timestamp = uint256(permStart) + uint256(elapsed);
 
         uint256 result = manager.startOfSpendPeriod(
-            timestamp,
-            JustaPermissionManager.PeriodUnit.Minute,
-            multiplier,
-            uint256(permStart)
+            timestamp, JustaPermissionManager.PeriodUnit.Minute, multiplier, uint256(permStart)
         );
 
         uint256 expected = uint256(permStart) + (uint256(elapsed) / duration) * duration;
@@ -784,37 +773,88 @@ contract TestReadFunctions is Test, PreparePermission {
 
     function test_StartOfSpendPeriod_MaxMultiplier() public view {
         // multiplier=65535 (max uint16) with Minute
-        uint256 permStart = 1736899200;
-        uint256 periodDuration = uint256(65535) * 60; // 3932100 seconds
+        uint256 permStart = 1_736_899_200;
+        uint256 periodDuration = uint256(65_535) * 60; // 3932100 seconds
         // Midway through period 0
         uint256 timestamp = permStart + periodDuration / 2;
 
-        uint256 result = manager.startOfSpendPeriod(
-            timestamp, JustaPermissionManager.PeriodUnit.Minute, 65535, permStart
-        );
+        uint256 result =
+            manager.startOfSpendPeriod(timestamp, JustaPermissionManager.PeriodUnit.Minute, 65_535, permStart);
         assertEq(result, permStart, "Max uint16 multiplier should not overflow in period 0");
 
         // Just past period 0
         uint256 timestamp2 = permStart + periodDuration + 1;
 
-        uint256 result2 = manager.startOfSpendPeriod(
-            timestamp2, JustaPermissionManager.PeriodUnit.Minute, 65535, permStart
-        );
+        uint256 result2 =
+            manager.startOfSpendPeriod(timestamp2, JustaPermissionManager.PeriodUnit.Minute, 65_535, permStart);
         assertEq(result2, permStart + periodDuration, "Max uint16 multiplier: period 1 start");
     }
 
     function test_StartOfSpendPeriod_Month_ViaPublicFunction() public view {
         // Permission starts Jan 15 2025 00:00:00 UTC
-        uint256 permStart = 1736899200;
+        uint256 permStart = 1_736_899_200;
         // Timestamp = Feb 20 2025 00:00:00 UTC = 1740009600
         // monthsElapsed = (2025*12+2) - (2025*12+1) = 1 → periodIndex = 1/1 = 1
         // periodStart = addMonths(Jan 15, 1) = Feb 15 2025 00:00:00 UTC = 1739577600
-        uint256 timestamp = 1740009600;
+        uint256 timestamp = 1_740_009_600;
+
+        uint256 result = manager.startOfSpendPeriod(timestamp, JustaPermissionManager.PeriodUnit.Month, 1, permStart);
+        assertEq(result, 1_739_577_600, "Month period should return Feb 15 (addMonths(Jan 15, 1))");
+    }
+
+    function test_StartOfSpendPeriod_FixedUnit_WithPermStartZero(
+        uint48 timestamp,
+        uint8 periodUnit,
+        uint16 multiplier
+    )
+        public
+        view
+    {
+        vm.assume(timestamp > 0);
+        vm.assume(periodUnit <= 3);
+        vm.assume(multiplier > 0);
+
+        uint256 duration;
+        if (periodUnit == 0) {
+            duration = 60 * uint256(multiplier);
+        } else if (periodUnit == 1) {
+            duration = 3600 * uint256(multiplier);
+        } else if (periodUnit == 2) {
+            duration = 86_400 * uint256(multiplier);
+        } else {
+            duration = 604_800 * uint256(multiplier);
+        }
 
         uint256 result = manager.startOfSpendPeriod(
-            timestamp, JustaPermissionManager.PeriodUnit.Month, 1, permStart
+            uint256(timestamp), JustaPermissionManager.PeriodUnit(periodUnit), multiplier, 0
         );
-        assertEq(result, 1739577600, "Month period should return Feb 15 (addMonths(Jan 15, 1))");
+
+        // With permStart=0, periods align to epoch
+        uint256 expected = (uint256(timestamp) / duration) * duration;
+        assertEq(result, expected);
+        assertTrue(result <= uint256(timestamp));
+        assertTrue(result + duration > uint256(timestamp));
+    }
+
+    function test_StartOfSpendPeriod_Month_WithPermStartZero() public view {
+        // permStart = 0 → Jan 1, 1970 00:00:00 UTC
+        // timestamp = Jan 15 2025 00:00:00 UTC = 1736899200
+        // monthsElapsed = (2025*12+1) - (1970*12+1) = 660
+        // periodStart = addMonths(0, 660) = Jan 1 2025 00:00:00 UTC = 1735689600
+        uint256 result = manager.startOfSpendPeriod(1_736_899_200, JustaPermissionManager.PeriodUnit.Month, 1, 0);
+        assertEq(result, 1_735_689_600, "Month with permStart=0 should produce Jan 1 2025");
+    }
+
+    function test_StartOfSpendPeriod_Month_ShouldHandleAddMonthsOvershoot() public view {
+        // permStart = Jan 31 2025 12:00:00 UTC = 1738324800
+        // timestamp = Feb 20 2025 00:00:00 UTC = 1740009600
+        // monthsElapsed = 1, periodIndex = 1
+        // addMonths(Jan 31 12:00, 1) = Feb 28 12:00 = 1740744000
+        // 1740744000 > 1740009600 → overshoot, periodIndex -= 1 = 0
+        // periodStart = addMonths(Jan 31 12:00, 0) = Jan 31 12:00 = 1738324800
+        uint256 result =
+            manager.startOfSpendPeriod(1_740_009_600, JustaPermissionManager.PeriodUnit.Month, 1, 1_738_324_800);
+        assertEq(result, 1_738_324_800, "Month overshoot should fall back to previous period");
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -847,9 +887,8 @@ contract TestReadFunctions is Test, PreparePermission {
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Day, multiplier);
 
-        JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends
-        );
+        JustaPermissionManager.Permission memory permission =
+            createPermission(TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends);
 
         JustaPermissionManager.PeriodSpend memory period = manager.getCurrentPeriod(permission, spends[0]);
 
@@ -882,12 +921,10 @@ contract TestReadFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] =
-            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Week, multiplier);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Week, multiplier);
 
-        JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends
-        );
+        JustaPermissionManager.Permission memory permission =
+            createPermission(TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends);
 
         JustaPermissionManager.PeriodSpend memory period = manager.getCurrentPeriod(permission, spends[0]);
 
@@ -919,9 +956,8 @@ contract TestReadFunctions is Test, PreparePermission {
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
         spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Forever, 1);
 
-        JustaPermissionManager.Permission memory permission = createPermission(
-            TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends
-        );
+        JustaPermissionManager.Permission memory permission =
+            createPermission(TEST_ACCOUNT_ADDRESS, spender, permStart, permEnd, 0, calls, spends);
 
         JustaPermissionManager.PeriodSpend memory period = manager.getCurrentPeriod(permission, spends[0]);
 

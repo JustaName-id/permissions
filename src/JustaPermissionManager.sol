@@ -358,7 +358,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @param permission The complete permission with calls and spends arrays.
      * @return True if approved successfully.
      */
-    function approve(Permission calldata permission) external nonReentrant requireSender(permission.account) returns (bool) {
+    function approve(Permission calldata permission)
+        external
+        nonReentrant
+        requireSender(permission.account)
+        returns (bool)
+    {
         // Check spender is non-zero
         if (permission.spender == address(0)) {
             revert JustaPermissionManager_ZeroSpender();
@@ -910,14 +915,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
      * @notice Get the duration of a spend period in seconds for fixed-length units.
      * @dev Only handles Minute, Hour, Day, Week. Month and Forever are handled separately.
      */
-    function _fixedPeriodDuration(
-        PeriodUnit unit,
-        uint16 multiplier
-    )
-        internal
-        pure
-        returns (uint48)
-    {
+    function _fixedPeriodDuration(PeriodUnit unit, uint16 multiplier) internal pure returns (uint48) {
         if (unit == PeriodUnit.Minute) {
             return 60 * uint48(multiplier);
         }
@@ -1157,18 +1155,16 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
 
             periodStart = uint48(candidateStart);
 
-            uint256 calculatedEnd = DateTimeLib.addMonths(
-                uint256(permissionStart), (periodIndex + 1) * uint256(spendLimit.multiplier)
-            );
+            uint256 calculatedEnd =
+                DateTimeLib.addMonths(uint256(permissionStart), (periodIndex + 1) * uint256(spendLimit.multiplier));
 
             if (calculatedEnd > type(uint48).max) {
                 revert JustaPermissionManager_PeriodOverflow();
             }
             periodEnd = uint48(calculatedEnd);
         } else {
-            periodStart = uint48(
-                _fixedPeriodStart(currentTimestamp, spendLimit.unit, spendLimit.multiplier, permissionStart)
-            );
+            periodStart =
+                uint48(_fixedPeriodStart(currentTimestamp, spendLimit.unit, spendLimit.multiplier, permissionStart));
             uint48 duration = _fixedPeriodDuration(spendLimit.unit, spendLimit.multiplier);
             uint256 calculatedEnd = uint256(periodStart) + uint256(duration);
 

@@ -1681,19 +1681,25 @@ contract TestWriteFunctions is Test, PreparePermission {
         // 1 byte of calldata should revert
         executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aa" });
         vm.prank(spender);
-        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 1));
+        vm.expectRevert(
+            abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 1)
+        );
         manager.executeBatch(permission, executeCalls);
 
         // 2 bytes of calldata should revert
         executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aabb" });
         vm.prank(spender);
-        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 2));
+        vm.expectRevert(
+            abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 2)
+        );
         manager.executeBatch(permission, executeCalls);
 
         // 3 bytes of calldata should revert
         executeCalls[0] = BaseAccount.Call({ target: address(mockToken), value: 0, data: hex"aabbcc" });
         vm.prank(spender);
-        vm.expectRevert(abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 3));
+        vm.expectRevert(
+            abi.encodeWithSelector(JustaPermissionManager.JustaPermissionManager_InvalidCalldataLength.selector, 3)
+        );
         manager.executeBatch(permission, executeCalls);
     }
 
@@ -3689,9 +3695,7 @@ contract TestWriteFunctions is Test, PreparePermission {
 
         // Mock the actual execution on the account so it doesn't revert
         vm.mockCall(
-            TEST_ACCOUNT_ADDRESS,
-            abi.encodeWithSelector(BaseAccount.executeBatch.selector, calls),
-            abi.encode()
+            TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector, calls), abi.encode()
         );
 
         // Should NOT revert with NoSpendPermissions

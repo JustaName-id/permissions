@@ -48,13 +48,7 @@ contract TestPermissionLifecycleFlow is Test, PreparePermission {
      *      3. Permission can be revoked
      *      4. Subsequent executions fail after revocation
      */
-    function test_ShouldFollowPermissionLifecycle(
-        address spender,
-        address recipient,
-        uint128 transferAmount
-    )
-        public
-    {
+    function test_ShouldFollowPermissionLifecycle(address spender, address recipient, uint128 transferAmount) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
