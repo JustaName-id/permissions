@@ -905,4 +905,227 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         assertEq(periodSpend.spend, transferAmount, "Feb 2025 period should have fresh spend (clamped from Feb 29)");
     }
 
+    /*//////////////////////////////////////////////////////////////
+                FIXED-UNIT PERIOD ALIGNMENT TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Tests that daily periods starting at noon reset at noon, not midnight.
+     * @dev permStart = Jan 15 2025 12:00:00 UTC. Spend at 08:00 Jan 16 is still period 1.
+     *      Spend after 12:00:01 Jan 16 is period 2.
+     */
+    function test_DayPeriod_ShouldAlignToPermissionStartAtNoon() public {
+        address spender = address(0xBEEF);
+        address recipient = address(0xCAFE);
+
+        uint160 allowance = 100 ether;
+        uint256 transferAmount = 60 ether;
+
+        // Permission starts Jan 15 2025 12:00:00 UTC (noon)
+        uint48 permStart = uint48(1736942400);
+        uint48 permEnd = uint48(permStart + 30 days);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Day, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            permStart,
+            permEnd,
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Warp to Jan 16 2025 08:00:00 UTC (20h after permStart, still in period 1)
+        vm.warp(permStart + 20 hours);
+
+        BaseAccount.Call[] memory batch = new BaseAccount.Call[](1);
+        batch[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+        assertEq(mockToken.balanceOf(recipient), transferAmount, "Transfer at 08:00 Jan 16 should succeed in period 1");
+
+        // Spend the rest of the limit in period 1
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, allowance - transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Still in period 1, should revert
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, 1);
+        vm.expectRevert();
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Warp past noon boundary: permStart + 86400 + 1 = Jan 16 12:00:01 UTC (period 2)
+        vm.warp(permStart + 86400 + 1);
+
+        // New period — spend should reset
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        JustaPermissionManager.PeriodSpend memory periodSpend =
+            manager.getLastUpdatedPeriod(permission, spends[0]);
+        assertEq(periodSpend.spend, transferAmount, "Period 2 should have fresh spend");
+    }
+
+    /**
+     * @notice Tests that weekly periods starting Wednesday reset on Wednesday, not Monday.
+     * @dev permStart = Wed Jan 15 2025 00:00:00 UTC. Mon Jan 20 is still in period 1.
+     *      Wed Jan 22 + 1s is period 2.
+     */
+    function test_WeekPeriod_ShouldAlignToPermissionStartOnWednesday() public {
+        address spender = address(0xBEEF);
+        address recipient = address(0xCAFE);
+
+        uint160 allowance = 100 ether;
+        uint256 transferAmount = 60 ether;
+
+        // Permission starts Wed Jan 15 2025 00:00:00 UTC
+        uint48 permStart = uint48(1736899200);
+        uint48 permEnd = uint48(permStart + 60 days);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Week, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            permStart,
+            permEnd,
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Warp to Mon Jan 20 2025 (5 days after permStart, still in period 1)
+        vm.warp(permStart + 5 days);
+
+        BaseAccount.Call[] memory batch = new BaseAccount.Call[](1);
+        batch[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+        assertEq(mockToken.balanceOf(recipient), transferAmount, "Mon Jan 20 should be in period 1");
+
+        // Spend the rest of the limit
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, allowance - transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Still in period 1, should revert
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, 1);
+        vm.expectRevert();
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Warp past Wed Jan 22: permStart + 604800 + 1 (period 2)
+        vm.warp(permStart + 604800 + 1);
+
+        // New period — spend should reset
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        JustaPermissionManager.PeriodSpend memory periodSpend =
+            manager.getLastUpdatedPeriod(permission, spends[0]);
+        assertEq(periodSpend.spend, transferAmount, "Period 2 should have fresh spend");
+    }
+
+    /**
+     * @notice Tests that hourly periods starting at :30 reset at :30, not :00.
+     * @dev permStart = Jan 15 2025 12:30:00 UTC. 40 min later still period 1.
+     *      After 3601s, period 2.
+     */
+    function test_HourPeriod_ShouldAlignToPermissionStartAtHalfPast() public {
+        address spender = address(0xBEEF);
+        address recipient = address(0xCAFE);
+
+        uint160 allowance = 100 ether;
+        uint256 transferAmount = 60 ether;
+
+        // Permission starts Jan 15 2025 12:30:00 UTC
+        uint48 permStart = uint48(1736944200);
+        uint48 permEnd = uint48(permStart + 1 days);
+
+        JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](1);
+        calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit.Hour, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            permStart,
+            permEnd,
+            0,
+            calls,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Warp to 40 minutes after permStart (still in period 1: 2400 < 3600)
+        vm.warp(permStart + 40 minutes);
+
+        BaseAccount.Call[] memory batch = new BaseAccount.Call[](1);
+        batch[0] = BaseAccount.Call({
+            target: address(mockToken),
+            value: 0,
+            data: abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount)
+        });
+
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+        assertEq(mockToken.balanceOf(recipient), transferAmount, "40 min after :30 should be in period 1");
+
+        // Spend the rest of the limit
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, allowance - transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Still in period 1, should revert
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, 1);
+        vm.expectRevert();
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        // Warp past the hour boundary: permStart + 3601 (period 2)
+        vm.warp(permStart + 3601);
+
+        // New period — spend should reset
+        batch[0].data = abi.encodeWithSelector(IERC20.transfer.selector, recipient, transferAmount);
+        vm.prank(spender);
+        manager.executeBatch(permission, batch);
+
+        JustaPermissionManager.PeriodSpend memory periodSpend =
+            manager.getLastUpdatedPeriod(permission, spends[0]);
+        assertEq(periodSpend.spend, transferAmount, "Period 2 should have fresh spend");
+    }
+
 }
