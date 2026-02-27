@@ -663,7 +663,12 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // `approve(address,uint256)` - 0x095ea7b3
             // We have to revoke any new approvals after the batch, else a bad app can
             // leave an approval to let them drain unlimited tokens after the batch.
+            // ERC-721 shares this selector; skip NFT contracts to avoid
+            // misinterpreting `tokenId` as an ERC-20 amount.
             if (fnSel == 0x095ea7b3) {
+                if (ERC165Checker.supportsInterface(target, type(IERC721).interfaceId)) {
+                    continue;
+                }
                 if (LibBytes.loadCalldata(data, 0x24) == 0) {
                     continue;
                 } // `amount == 0`

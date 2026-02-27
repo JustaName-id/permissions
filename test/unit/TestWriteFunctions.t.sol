@@ -3703,4 +3703,61 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                    ERC721 approve SKIP
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Tests that ERC721 approve is skipped during calldata parsing.
+     * @dev ERC721 shares the 0x095ea7b3 selector with ERC20 approve.
+     *      The parser must detect NFT contracts via ERC165 and skip them to
+     *      avoid misinterpreting tokenId as an ERC-20 amount.
+     */
+    function test_ExecuteBatch_ShouldSkipERC721Approve(address spender, address operator) public {
+        vm.assume(spender != address(0));
+        vm.assume(spender != TEST_ACCOUNT_ADDRESS);
+        vm.assume(spender != address(manager));
+        vm.assume(operator != address(0));
+        vm.assume(operator != TEST_ACCOUNT_ADDRESS);
+
+        uint256 tokenId = 42;
+
+        // Permission: call permission for ERC721 approve + ERC20 spend limit (not for the NFT)
+        JustaPermissionManager.CallPermission[] memory callPerms = new JustaPermissionManager.CallPermission[](1);
+        callPerms[0] = createCall(address(mockERC721), APPROVE_SELECTOR);
+
+        JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
+        spends[0] = createSpendLimit(address(mockToken), 100 ether, JustaPermissionManager.PeriodUnit.Forever, 1);
+
+        JustaPermissionManager.Permission memory permission = createPermission(
+            TEST_ACCOUNT_ADDRESS,
+            spender,
+            uint48(block.timestamp),
+            uint48(block.timestamp + 1 days),
+            0,
+            callPerms,
+            spends
+        );
+
+        vm.prank(TEST_ACCOUNT_ADDRESS);
+        manager.approve(permission);
+
+        // Build ERC721 approve call
+        BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
+        calls[0] = BaseAccount.Call({
+            target: address(mockERC721),
+            value: 0,
+            data: abi.encodeWithSelector(IERC721.approve.selector, operator, tokenId)
+        });
+
+        // Mock the actual execution on the account so it doesn't revert
+        vm.mockCall(
+            TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector, calls), abi.encode()
+        );
+
+        // Should NOT revert with NoSpendPermissions
+        vm.prank(spender);
+        manager.executeBatch(permission, calls);
+    }
+
 }
