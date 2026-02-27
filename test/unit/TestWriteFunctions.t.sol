@@ -2881,11 +2881,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         // Mock the account's executeBatch to succeed
         vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
-        // Mock allowance to return 1 (simulating successful revocation to 1 wei dust)
+        // Mock allowance to return 0 (simulating successful revocation)
         vm.mockCall(
             address(mockToken),
             abi.encodeWithSelector(IERC20.allowance.selector, TEST_ACCOUNT_ADDRESS, approvalSpender),
-            abi.encode(uint256(1))
+            abi.encode(uint256(0))
         );
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
@@ -2895,7 +2895,7 @@ contract TestWriteFunctions is Test, PreparePermission {
             data: abi.encodeWithSelector(IERC20.approve.selector, approvalSpender, approveAmount)
         });
 
-        // This should succeed because allowance returns 1 (revocation to dust successful)
+        // This should succeed because allowance returns 0 (revocation successful)
         vm.prank(spender);
         manager.executeBatch(permission, calls);
     }
@@ -3001,11 +3001,11 @@ contract TestWriteFunctions is Test, PreparePermission {
         // Mock the account's executeBatch to succeed
         vm.mockCall(TEST_ACCOUNT_ADDRESS, abi.encodeWithSelector(BaseAccount.executeBatch.selector), "");
 
-        // Mock allowance to return 1 (simulating successful revocation to 1 wei dust)
+        // Mock allowance to return 0 (simulating successful revocation)
         vm.mockCall(
             address(mockToken),
             abi.encodeWithSelector(IERC20.allowance.selector, TEST_ACCOUNT_ADDRESS, approvalSpender),
-            abi.encode(uint256(1))
+            abi.encode(uint256(0))
         );
 
         BaseAccount.Call[] memory calls = new BaseAccount.Call[](1);
@@ -3015,7 +3015,7 @@ contract TestWriteFunctions is Test, PreparePermission {
             data: abi.encodeWithSelector(bytes4(0x39509351), approvalSpender, approveAmount)
         });
 
-        // This should succeed because allowance returns 1 (revocation to dust successful)
+        // This should succeed because allowance returns 0 (revocation successful)
         vm.prank(spender);
         manager.executeBatch(permission, calls);
     }

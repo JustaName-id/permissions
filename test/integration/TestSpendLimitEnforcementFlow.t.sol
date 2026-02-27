@@ -468,11 +468,11 @@ contract TestSpendLimitEnforcementFlow is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls);
 
-        // Verify both approvals were revoked (allowance should be 1 wei dust)
+        // Verify both approvals were revoked (allowance should be 0)
         assertEq(
             mockTokenV2.allowance(TEST_ACCOUNT_ADDRESS, approvalSpender),
-            1,
-            "Allowance should be revoked to 1 wei dust after batch"
+            0,
+            "Allowance should be revoked to 0 after batch"
         );
 
         // Verify spend was tracked

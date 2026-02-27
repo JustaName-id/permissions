@@ -750,7 +750,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 revokeCalls[i] = BaseAccount.Call({
                     target: t.approvedERC20s.getAddress(i),
                     value: 0,
-                    data: abi.encodeWithSelector(IERC20.approve.selector, t.approvalSpenders.getAddress(i), 1)
+                    data: abi.encodeWithSelector(IERC20.approve.selector, t.approvalSpenders.getAddress(i), 0)
                 });
             }
             _executeBatch(permission.account, revokeCalls);
@@ -759,7 +759,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             for (uint256 i; i < approvedLength; ++i) {
                 address token = t.approvedERC20s.getAddress(i);
                 address spender = t.approvalSpenders.getAddress(i);
-                if (IERC20(token).allowance(permission.account, spender) > 1) {
+                if (IERC20(token).allowance(permission.account, spender) != 0) {
                     revert JustaPermissionManager_ApprovalRevocationFailed(token, spender);
                 }
             }
