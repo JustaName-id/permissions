@@ -61,7 +61,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -142,7 +142,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -206,13 +206,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
      * @dev The permission IS approved, but executeBatch fails because
      *      PermissionManager cannot call account.executeBatch().
      */
-    function test_ShouldFailIfManagerNotAddedAsOwner(
-        address spender,
-        address recipient,
-        uint160 allowance
-    )
-        public
-    {
+    function test_ShouldFailIfManagerNotAddedAsOwner(address spender, address recipient, uint160 allowance) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -230,7 +224,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -295,7 +289,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 
@@ -356,13 +350,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
     /**
      * @notice Tests upgrading to a Smart Account using cross-chain delegation in one step.
      */
-    function test_ShouldWorkWithCrossChainDelegation(
-        address spender,
-        address recipient,
-        uint160 allowance
-    )
-        public
-    {
+    function test_ShouldWorkWithCrossChainDelegation(address spender, address recipient, uint160 allowance) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));
@@ -388,7 +376,7 @@ contract Test7702BatchSetupFlow is Test, PreparePermission {
             TRANSFER_SELECTOR,
             address(mockToken),
             allowance,
-            6,
+            5,
             1
         );
 

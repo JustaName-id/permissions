@@ -226,12 +226,7 @@ contract TestCallCheckerFlow is Test, PreparePermission {
      * @notice Tests that execution reverts when checker approves but spend limit is exceeded.
      * @dev Checker returns true, but transfer amount exceeds allowance.
      */
-    function test_ShouldRevertIfCheckerApprovesButSpendLimitExceeded(
-        address spender,
-        address recipient
-    )
-        public
-    {
+    function test_ShouldRevertIfCheckerApprovesButSpendLimitExceeded(address spender, address recipient) public {
         vm.assume(spender != address(0));
         vm.assume(spender != TEST_ACCOUNT_ADDRESS);
         vm.assume(spender != address(manager));

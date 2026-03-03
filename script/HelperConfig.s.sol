@@ -80,10 +80,10 @@ abstract contract CodeConstants {
         keccak256("CallPermission(address target,bytes4 selector,address checker)");
 
     bytes32 public constant SPEND_LIMIT_TYPEHASH =
-        keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)");
+        keccak256("SpendLimit(address token,uint160 allowance,uint8 unit,uint16 multiplier)");
 
     bytes32 public constant PERMISSION_TYPEHASH = keccak256(
-        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector,address checker)SpendLimit(address token,uint160 allowance,uint8 unit,uint8 multiplier)"
+        "Permission(address account,address spender,uint48 start,uint48 end,uint256 salt,CallPermission[] calls,SpendLimit[] spends)CallPermission(address target,bytes4 selector,address checker)SpendLimit(address token,uint160 allowance,uint8 unit,uint16 multiplier)"
     );
 
     ////////////////////////////////////////////////////////////////////////
@@ -94,6 +94,7 @@ abstract contract CodeConstants {
     bytes4 public constant TRANSFER_FROM_SELECTOR = 0x23b872dd; // transferFrom(address,address,uint256)
     bytes4 public constant APPROVE_SELECTOR = 0x095ea7b3; // approve(address,uint256)
     bytes4 public constant PERMIT2_APPROVE_SELECTOR = 0x87517c45; // approve(address,address,uint160,uint48)
+    bytes4 public constant INCREASE_ALLOWANCE_SELECTOR = 0x39509351; // increaseAllowance(address,uint256)
 
 }
 
