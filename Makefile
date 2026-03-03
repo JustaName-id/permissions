@@ -90,6 +90,14 @@ ifeq ($(findstring --network linea-sepolia,$(ARGS)),--network linea-sepolia)
 	NETWORK_ARGS := --rpc-url $(LINEA_SEPOLIA_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier-url https://api.etherscan.io/v2/api --etherscan-api-key $(ETHERSCAN_API_KEY) --chain 59141 -vvvv
 endif
 
+ifeq ($(findstring --network celo-mainnet,$(ARGS)),--network celo-mainnet)
+	NETWORK_ARGS := --rpc-url $(CELO_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier-url https://api.etherscan.io/v2/api --etherscan-api-key $(ETHERSCAN_API_KEY) --etherscan-api-version v2 --chain 42220 -vvvv
+endif
+
+ifeq ($(findstring --network celo-sepolia,$(ARGS)),--network celo-sepolia)
+	NETWORK_ARGS := --rpc-url $(CELO_SEPOLIA_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier-url https://api.etherscan.io/v2/api --etherscan-api-key $(ETHERSCAN_API_KEY) --etherscan-api-version v2 --chain 11142220 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -130,4 +138,10 @@ deploy-linea-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
 deploy-linea-sepolia:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-celo-mainnet:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-celo-sepolia:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
