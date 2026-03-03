@@ -205,9 +205,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         JustaPermissionManager.CallPermission[] memory calls = new JustaPermissionManager.CallPermission[](0);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -559,12 +558,10 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), selector);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](2);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
-        spends[1] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
+        spends[1] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -681,9 +678,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), selector, checker);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -725,9 +721,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), selector, address(manager));
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -758,9 +753,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), selector, TEST_ACCOUNT_ADDRESS);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -797,9 +791,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), selector, eoaChecker);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -1735,9 +1728,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -1795,9 +1787,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -1862,9 +1853,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCallWithChecker(address(mockToken), TRANSFER_SELECTOR, checker);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -1929,9 +1919,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), TRANSFER_SELECTOR);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -1992,9 +1981,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[1] = createCallWithChecker(address(mockToken), APPROVE_SELECTOR, checker2);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -2072,9 +2060,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[1] = createCall(address(mockToken), TRANSFER_SELECTOR); // No checker
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -2658,9 +2645,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify spend was tracked
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount);
     }
@@ -2716,9 +2702,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify spend was tracked
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount);
     }
@@ -2773,9 +2758,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify spend IS tracked
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount);
     }
@@ -2836,9 +2820,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify approve amount was tracked as spend
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, approveAmount);
     }
@@ -2956,9 +2939,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify increaseAllowance amount was tracked as spend
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, approveAmount);
     }
@@ -3129,9 +3111,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify no spend was tracked
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, 0);
     }
@@ -3159,9 +3140,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(PERMIT2, PERMIT2_APPROVE_SELECTOR);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -3218,9 +3198,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         calls[0] = createCall(PERMIT2, PERMIT2_APPROVE_SELECTOR);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission = createPermission(
             TEST_ACCOUNT_ADDRESS, spender, uint48(block.timestamp), uint48(block.timestamp + 1 days), 0, calls, spends
@@ -3292,9 +3271,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.approve(permission);
 
         // Check that period doesn't exist before execution
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodBefore = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodBefore.start, 0);
 
@@ -3381,9 +3359,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls2);
 
         // Verify spend accumulated
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, firstTransfer + secondTransfer);
     }
@@ -3439,9 +3416,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         vm.prank(spender);
         manager.executeBatch(permission, calls1);
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         // Check spend in first period
         JustaPermissionManager.PeriodSpend memory firstPeriod = manager.getLastUpdatedPeriod(permission, spendLimit);
@@ -3584,9 +3560,8 @@ contract TestWriteFunctions is Test, PreparePermission {
         manager.executeBatch(permission, calls);
 
         // Verify total spend was tracked
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
         assertEq(periodSpend.spend, transferAmount1 + transferAmount2);
     }

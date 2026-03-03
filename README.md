@@ -2,13 +2,22 @@
 
 **CAUTION: These contracts are not yet audited. Use with caution.**
 
-## Temporary Deployment Addresses
+## Deployment Addresses
 
-- **JustaPermissionManager**: `0x914d7fec6aac8cd542e72bca78b30650d45643d7`
+**JustaPermissionManager**: `0xf1b40E3D5701C04d86F7828f0EB367B9C90901D8`
 
 **Deployed on:**
 
-- Base Sepolia
+| Network | Chain ID | Testnet | Chain ID |
+|---------|----------|---------|----------|
+| Ethereum Mainnet | 1 | Sepolia | 11155111 |
+| Base | 8453 | Base Sepolia | 84532 |
+| Optimism | 10 | OP Sepolia | 11155420 |
+| Arbitrum One | 42161 | Arbitrum Sepolia | 421614 |
+| BSC | 56 | BSC Testnet | 97 |
+| Linea | 59144 | Linea Sepolia | 59141 |
+| Avalanche | 43114 | Avalanche Fuji | 43113 |
+| Celo | 42220 | Celo Sepolia | 11142220 |
 
 ## Overview
 

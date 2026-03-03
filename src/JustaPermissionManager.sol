@@ -210,6 +210,7 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
         Week, // 604800 seconds
         Month, // Calendar month (uses addMonths for day clamping)
         Forever // type(uint48).max, one-time allowance for entire permission duration
+
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -579,10 +580,11 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
             // All checkers must approve the call (AND logic)
             uint256 checkersLength = matchingCheckers.length;
             for (uint256 j = 0; j < checkersLength;) {
-                if (!ICallChecker(matchingCheckers[j])
-                        .canExecute(
-                            hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
-                        )) {
+                if (
+                    !ICallChecker(matchingCheckers[j]).canExecute(
+                        hash, permission.account, permission.spender, target, calls[i].value, calls[i].data
+                    )
+                ) {
                     revert JustaPermissionManager_CheckerRejectedCall(target, selector, matchingCheckers[j]);
                 }
                 unchecked {
@@ -776,13 +778,16 @@ contract JustaPermissionManager is EIP712, ReentrancyGuard {
                 new IAllowanceTransfer.TokenSpenderPair[](permit2Length);
             for (uint256 i; i < permit2Length; ++i) {
                 approvals[i] = IAllowanceTransfer.TokenSpenderPair({
-                    token: t.permit2ERC20s.getAddress(i), spender: t.permit2Spenders.getAddress(i)
+                    token: t.permit2ERC20s.getAddress(i),
+                    spender: t.permit2Spenders.getAddress(i)
                 });
             }
 
             BaseAccount.Call[] memory permit2RevokeCalls = new BaseAccount.Call[](1);
             permit2RevokeCalls[0] = BaseAccount.Call({
-                target: PERMIT2, value: 0, data: abi.encodeWithSelector(IAllowanceTransfer.lockdown.selector, approvals)
+                target: PERMIT2,
+                value: 0,
+                data: abi.encodeWithSelector(IAllowanceTransfer.lockdown.selector, approvals)
             });
             _executeBatch(permission.account, permit2RevokeCalls);
         }

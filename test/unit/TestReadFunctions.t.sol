@@ -352,9 +352,8 @@ contract TestReadFunctions is Test, PreparePermission {
         calls[0] = createCall(address(mockToken), selector);
 
         JustaPermissionManager.SpendLimit[] memory spends = new JustaPermissionManager.SpendLimit[](1);
-        spends[0] = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        spends[0] =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.Permission memory permission1 = createPermission(
             TEST_ACCOUNT_ADDRESS,
@@ -463,9 +462,8 @@ contract TestReadFunctions is Test, PreparePermission {
             multiplier
         );
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
 
@@ -506,9 +504,8 @@ contract TestReadFunctions is Test, PreparePermission {
         vm.prank(TEST_ACCOUNT_ADDRESS);
         manager.approve(permission);
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getLastUpdatedPeriod(permission, spendLimit);
 
@@ -552,9 +549,8 @@ contract TestReadFunctions is Test, PreparePermission {
             multiplier
         );
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         JustaPermissionManager.PeriodSpend memory periodSpend = manager.getCurrentPeriod(permission, spendLimit);
 
@@ -592,9 +588,8 @@ contract TestReadFunctions is Test, PreparePermission {
             multiplier
         );
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -639,9 +634,8 @@ contract TestReadFunctions is Test, PreparePermission {
             multiplier
         );
 
-        JustaPermissionManager.SpendLimit memory spendLimit = createSpendLimit(
-            address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier
-        );
+        JustaPermissionManager.SpendLimit memory spendLimit =
+            createSpendLimit(address(mockToken), allowance, JustaPermissionManager.PeriodUnit(periodUnit), multiplier);
 
         // Calculate expected timestamp after warp BEFORE warping
         uint48 expectedTimestampAfterWarp = uint48(block.timestamp + 2 days);
@@ -825,9 +819,8 @@ contract TestReadFunctions is Test, PreparePermission {
             duration = 604_800 * uint256(multiplier);
         }
 
-        uint256 result = manager.startOfSpendPeriod(
-            uint256(timestamp), JustaPermissionManager.PeriodUnit(periodUnit), multiplier, 0
-        );
+        uint256 result =
+            manager.startOfSpendPeriod(uint256(timestamp), JustaPermissionManager.PeriodUnit(periodUnit), multiplier, 0);
 
         // With permStart=0, periods align to epoch
         uint256 expected = (uint256(timestamp) / duration) * duration;

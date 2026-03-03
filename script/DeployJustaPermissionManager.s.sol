@@ -12,9 +12,9 @@ import { JustaPermissionManager } from "../src/JustaPermissionManager.sol";
  */
 contract DeployJustaPermissionManager is Script {
 
-    address constant EXPECTED_MANAGER = address(0);
+    address constant EXPECTED_MANAGER = address(0xf1b40E3D5701C04d86F7828f0EB367B9C90901D8);
 
-    bytes32 constant MANAGER_SALT = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 constant MANAGER_SALT = 0x0000000000000000000000000000000000000000000000000000000000000001;
 
     function run() public {
         console2.log("Deploying on chain ID", block.chainid);
@@ -37,7 +37,9 @@ contract DeployJustaPermissionManager is Script {
     function deployWithSafeSingleton() internal {
         // Deploy manager
         address manager = SafeSingletonDeployer.broadcastDeploy({
-            creationCode: type(JustaPermissionManager).creationCode, args: "", salt: MANAGER_SALT
+            creationCode: type(JustaPermissionManager).creationCode,
+            args: "",
+            salt: MANAGER_SALT
         });
 
         console2.log("Deployed JustaPermissionManager:", manager);
