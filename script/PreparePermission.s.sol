@@ -37,13 +37,7 @@ contract PreparePermission is Script, CodeConstants {
         returns (JustaPermissionManager.Permission memory permission)
     {
         return JustaPermissionManager.Permission({
-            account: account,
-            spender: spender,
-            start: start,
-            end: end,
-            salt: salt,
-            calls: calls,
-            spends: spends
+            account: account, spender: spender, start: start, end: end, salt: salt, calls: calls, spends: spends
         });
     }
 
@@ -101,12 +95,10 @@ contract PreparePermission is Script, CodeConstants {
         pure
         returns (JustaPermissionManager.SpendLimit memory spend)
     {
-        return JustaPermissionManager.SpendLimit({
-            token: token,
-            allowance: allowance,
-            unit: unit,
-            multiplier: multiplier
-        });
+        return
+            JustaPermissionManager.SpendLimit({
+                token: token, allowance: allowance, unit: unit, multiplier: multiplier
+            });
     }
 
     /**
@@ -153,13 +145,7 @@ contract PreparePermission is Script, CodeConstants {
         });
 
         return JustaPermissionManager.Permission({
-            account: account,
-            spender: spender,
-            start: start,
-            end: end,
-            salt: salt,
-            calls: calls,
-            spends: spends
+            account: account, spender: spender, start: start, end: end, salt: salt, calls: calls, spends: spends
         });
     }
 

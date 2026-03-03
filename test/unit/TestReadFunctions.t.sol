@@ -819,8 +819,9 @@ contract TestReadFunctions is Test, PreparePermission {
             duration = 604_800 * uint256(multiplier);
         }
 
-        uint256 result =
-            manager.startOfSpendPeriod(uint256(timestamp), JustaPermissionManager.PeriodUnit(periodUnit), multiplier, 0);
+        uint256 result = manager.startOfSpendPeriod(
+            uint256(timestamp), JustaPermissionManager.PeriodUnit(periodUnit), multiplier, 0
+        );
 
         // With permStart=0, periods align to epoch
         uint256 expected = (uint256(timestamp) / duration) * duration;
