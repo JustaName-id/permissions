@@ -16,6 +16,7 @@
 | Linea            | 59144    | Linea Sepolia    | 59141    |
 | Avalanche        | 43114    | Avalanche Fuji   | 43113    |
 | Celo             | 42220    | Celo Sepolia     | 11142220 |
+| Flare            | 14       | Flare Coston2    | 114      |
 
 ## Overview
 
