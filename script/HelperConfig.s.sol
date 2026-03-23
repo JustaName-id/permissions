@@ -37,7 +37,7 @@ abstract contract CodeConstants {
     uint256 public constant CELO_SEPOLIA_CHAIN_ID = 11_142_220;
 
     uint256 public constant FLARE_CHAIN_ID = 14;
-    uint256 public constant FLARE_COSTON2_CHAIN_ID = 114;    
+    uint256 public constant FLARE_COSTON2_CHAIN_ID = 114;
 
     ////////////////////////////////////////////////////////////////////////
     // ENTRY POINT
