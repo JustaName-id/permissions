@@ -39,6 +39,9 @@ abstract contract CodeConstants {
     uint256 public constant FLARE_CHAIN_ID = 14;
     uint256 public constant FLARE_COSTON2_CHAIN_ID = 114;
 
+    uint256 public constant INK_CHAIN_ID = 57_073;
+    uint256 public constant INK_SEPOLIA_CHAIN_ID = 763_373;
+
     ////////////////////////////////////////////////////////////////////////
     // ENTRY POINT
     ////////////////////////////////////////////////////////////////////////
@@ -118,7 +121,8 @@ contract HelperConfig is CodeConstants, Script {
             || chainId == ARBITRUM_ONE_CHAIN_ID || chainId == ARBITRUM_SEPOLIA_CHAIN_ID || chainId == AVALANCHE_CHAIN_ID
             || chainId == AVALANCHE_FUJI_CHAIN_ID || chainId == BSC_CHAIN_ID || chainId == BSC_TESTNET_CHAIN_ID
             || chainId == LINEA_CHAIN_ID || chainId == LINEA_SEPOLIA_CHAIN_ID || chainId == CELO_CHAIN_ID
-            || chainId == CELO_SEPOLIA_CHAIN_ID || chainId == FLARE_CHAIN_ID || chainId == FLARE_COSTON2_CHAIN_ID;
+            || chainId == CELO_SEPOLIA_CHAIN_ID || chainId == FLARE_CHAIN_ID || chainId == FLARE_COSTON2_CHAIN_ID
+            || chainId == INK_CHAIN_ID || chainId == INK_SEPOLIA_CHAIN_ID;
     }
 
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {

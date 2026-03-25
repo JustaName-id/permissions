@@ -106,6 +106,14 @@ ifeq ($(findstring --network flare-coston2,$(ARGS)),--network flare-coston2)
 	NETWORK_ARGS := --rpc-url $(FLARE_COSTON2_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://coston2-explorer.flare.network/api --chain 114 -vvvv
 endif
 
+ifeq ($(findstring --network ink-mainnet,$(ARGS)),--network ink-mainnet)
+	NETWORK_ARGS := --rpc-url $(INK_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://explorer.inkonchain.com/api --chain 57073 -vvvv
+endif
+
+ifeq ($(findstring --network ink-sepolia,$(ARGS)),--network ink-sepolia)
+	NETWORK_ARGS := --rpc-url $(INK_SEPOLIA_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://explorer-sepolia.inkonchain.com/api --chain 763373 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -158,4 +166,10 @@ deploy-flare-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
 deploy-flare-coston2:
-	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)	
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-ink-mainnet:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-ink-sepolia:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
