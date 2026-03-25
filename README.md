@@ -17,6 +17,7 @@
 | Avalanche        | 43114    | Avalanche Fuji   | 43113    |
 | Celo             | 42220    | Celo Sepolia     | 11142220 |
 | Flare            | 14       | Flare Coston2    | 114      |
+| Ink              | 57073    | Ink Sepolia      | 763373   |
 
 ## Overview
 
