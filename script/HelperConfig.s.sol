@@ -42,7 +42,7 @@ abstract contract CodeConstants {
     uint256 public constant INK_CHAIN_ID = 57_073;
     uint256 public constant INK_SEPOLIA_CHAIN_ID = 763_373;
 
-    uint256 public constant DOS_CHAIN_ID = 7_979;
+    uint256 public constant DOS_CHAIN_ID = 7979;
 
     ////////////////////////////////////////////////////////////////////////
     // ENTRY POINT
