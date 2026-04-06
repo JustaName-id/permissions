@@ -114,6 +114,10 @@ ifeq ($(findstring --network ink-sepolia,$(ARGS)),--network ink-sepolia)
 	NETWORK_ARGS := --rpc-url $(INK_SEPOLIA_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://explorer-sepolia.inkonchain.com/api --chain 763373 -vvvv
 endif
 
+ifeq ($(findstring --network dos-mainnet,$(ARGS)),--network dos-mainnet)
+	NETWORK_ARGS := --rpc-url $(DOS_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://doscan.io/api --chain 7979 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -172,4 +176,7 @@ deploy-ink-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
 deploy-ink-sepolia:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-dos-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
