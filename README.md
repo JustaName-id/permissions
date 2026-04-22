@@ -19,6 +19,7 @@
 | Flare            | 14       | Flare Coston2    | 114      |
 | Ink              | 57073    | Ink Sepolia      | 763373   |
 | DOS              | 7979     |                  |          |
+| Gnosis           | 100      | -                | -        |
 
 ## Overview
 
