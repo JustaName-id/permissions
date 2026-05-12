@@ -46,6 +46,8 @@ abstract contract CodeConstants {
 
     uint256 public constant GNOSIS_CHAIN_ID = 100;
 
+    uint256 public constant ARC_TESTNET_CHAIN_ID = 5_042_002;
+
     ////////////////////////////////////////////////////////////////////////
     // ENTRY POINT
     ////////////////////////////////////////////////////////////////////////
@@ -127,7 +129,7 @@ contract HelperConfig is CodeConstants, Script {
             || chainId == LINEA_CHAIN_ID || chainId == LINEA_SEPOLIA_CHAIN_ID || chainId == CELO_CHAIN_ID
             || chainId == CELO_SEPOLIA_CHAIN_ID || chainId == FLARE_CHAIN_ID || chainId == FLARE_COSTON2_CHAIN_ID
             || chainId == INK_CHAIN_ID || chainId == INK_SEPOLIA_CHAIN_ID || chainId == DOS_CHAIN_ID
-            || chainId == GNOSIS_CHAIN_ID;
+            || chainId == GNOSIS_CHAIN_ID || chainId == ARC_TESTNET_CHAIN_ID;
     }
 
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
