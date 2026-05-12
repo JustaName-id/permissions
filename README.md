@@ -20,6 +20,7 @@
 | Ink              | 57073    | Ink Sepolia      | 763373   |
 | DOS              | 7979     |                  |          |
 | Gnosis           | 100      | -                | -        |
+| -                | -        | Arc Testnet             | 5042002  |
 
 ## Overview
 
