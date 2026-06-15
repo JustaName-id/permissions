@@ -126,6 +126,14 @@ ifeq ($(findstring --network arc-testnet,$(ARGS)),--network arc-testnet)
 	NETWORK_ARGS := --rpc-url $(ARC_TESTNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://testnet.arcscan.app/api --chain 5042002 -vvvv
 endif
 
+ifeq ($(findstring --network polygon-mainnet,$(ARGS)),--network polygon-mainnet)
+	NETWORK_ARGS := --rpc-url $(POLYGON_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) --chain 137 -vvvv
+endif
+
+ifeq ($(findstring --network polygon-amoy,$(ARGS)),--network polygon-amoy)
+	NETWORK_ARGS := --rpc-url $(POLYGON_AMOY_RPC_URL) --account $(ACCOUNT) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) --chain 80002 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -195,3 +203,8 @@ deploy-gnosis-mainnet:
 deploy-arc-testnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
+deploy-polygon-mainnet:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-polygon-amoy:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
