@@ -24,6 +24,7 @@
 | Polygon          | 137      | -                | -        |
 | Robinhood Chain  | 4663     | -                | -        |
 | Soneium          | 1868     | -                | -        |
+| HyveChain        | 7847     | -                | -        |
 
 ## Overview
 

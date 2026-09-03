@@ -142,6 +142,10 @@ ifeq ($(findstring --network soneium-mainnet,$(ARGS)),--network soneium-mainnet)
 	NETWORK_ARGS := --rpc-url $(SONEIUM_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://soneium.blockscout.com/api --chain 1868 -vvvv
 endif
 
+ifeq ($(findstring --network hyvechain-mainnet,$(ARGS)),--network hyvechain-mainnet)
+	NETWORK_ARGS := --rpc-url $(HYVECHAIN_MAINNET_RPC_URL) --account $(ACCOUNT) --broadcast --verify --verifier blockscout --verifier-url https://explorer.hyvechain.com/api --chain 7847 -vvvv
+endif
+
 deploy-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
@@ -221,4 +225,7 @@ deploy-robinhood-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
 
 deploy-soneium-mainnet:
+	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
+
+deploy-hyvechain-mainnet:
 	@forge script script/DeployJustaPermissionManager.s.sol:DeployJustaPermissionManager $(NETWORK_ARGS)
